@@ -32,8 +32,8 @@
       </div>
       
       <div class="header-actions">
-        <button id="btn-settings" class="btn-icon" title="Settings">⚙️</button>
-        <button id="lang-toggle" class="btn-icon" title="Toggle Language">ZH</button>
+        <button id="btn-settings" class="btn-icon" title="Settings">[ SETTINGS ]</button>
+        <button id="lang-toggle" class="btn-icon" title="Toggle Language">[ ZH ]</button>
       </div>
     </header>
 
@@ -46,7 +46,7 @@
         <div class="splash-menu">
           
           <button class="cmd-btn" id="btn-random">
-            <span class="key">🎲</span>
+            <span class="key">[ R ]</span>
             <div>
               <div>$ random --wiki</div>
               <div class="cmd-desc">Get a random Wikipedia article</div>
@@ -55,13 +55,13 @@
           
           <div class="domain-selector">
             <label><input type="radio" name="domain" value="any" checked> [ * ] ANY</label>
-            <label><input type="radio" name="domain" value="space"> [ S ] SPACE</label>
-            <label><input type="radio" name="domain" value="history"> [ H ] HISTORY</label>
-            <label><input type="radio" name="domain" value="art"> [ A ] ART</label>
+            <label id="btn-open-topics" style="cursor: pointer; color: var(--text-primary);">[ ≡ ] TOPICS: <span id="current-topic-label" style="color: var(--accent);">ANY</span></label>
+            <!-- Hidden input to store selected topic -->
+            <input type="hidden" id="selected-topic-val" value="any">
           </div>
           
           <button class="cmd-btn" id="btn-search">
-            <span class="key">🔍</span>
+            <span class="key">[ S ]</span>
             <div>
               <div>$ search --query</div>
               <div class="cmd-desc">Find specific knowledge</div>
@@ -69,7 +69,7 @@
           </button>
           
           <button class="cmd-btn" id="btn-upload">
-            <span class="key">📚</span>
+            <span class="key">[ U ]</span>
             <div>
               <div>$ load ./book.epub</div>
               <div class="cmd-desc">Import local EPUB file</div>
@@ -97,7 +97,7 @@
         </span>
       </div>
       <div class="status-right">
-        <span id="btn-sync" class="status-btn" title="Sync to GitHub Gist">☁️ push</span>
+        <span id="btn-sync" class="status-btn" title="Sync to GitHub Gist">[ PUSH ]</span>
         <span>UTF-8</span>
         <span>LF</span>
       </div>
@@ -134,7 +134,17 @@
       <input type="password" id="setting-token" class="cmd-input" placeholder="> GitHub PAT (repo scope)...">
       <input type="text" id="setting-gist" class="cmd-input" placeholder="> Gist ID (leave empty to create)...">
       <div style="padding: 16px; text-align: right;">
-        <button id="btn-save-settings" class="cmd-btn" style="display: inline-block;">Save & Close</button>
+        <button id="btn-save-settings" class="cmd-btn" style="display: inline-block;">[ SAVE & CLOSE ]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Topics Modal -->
+  <div id="modal-topics" class="modal-wrapper">
+    <div class="cmd-palette" style="max-width: 500px;">
+      <div class="cmd-title" style="padding: 16px 16px 0;">// SELECT TOPIC DOMAIN</div>
+      <div id="topic-grid" class="topic-grid">
+        <!-- Injected via JS -->
       </div>
     </div>
   </div>
