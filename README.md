@@ -1,54 +1,77 @@
 # read.sh
 
-> A sci-fi terminal-styled PWA reader that renders articles and books like syntax-highlighted code.
+[ EN | ZH ]
 
-**read.sh** is a hardcore, terminal-aesthetic web reader designed for developers and geeks. It strips away standard UI elements in favor of a Delos-inspired monochromatic command-line interface. 
+## EN
 
-Read text like code.
+**STATUS: ONLINE**
+**TYPE: PWA READER / TERMINAL EMULATOR UI**
 
-## 🚀 Features
+read.sh is a minimal, offline-first progressive web application designed for reading text-based content within a terminal-aesthetic environment. It utilizes regular expressions to parse and apply syntax highlighting to plain text, simulating a code-reading experience.
 
-- **Terminal Aesthetic**: Deep black background, muted cyan typography, and zero rounded corners.
-- **"Syntax Highlighting" for Plain Text**: Custom regex engine parses text into tokens (tags, numbers, proper nouns, quotes) to simulate code reading.
-- **Offline First**: Fully functional PWA that works entirely offline once loaded.
-- **Dual Source**: 
-  - `🎲 random --wiki`: Fetch random Wikipedia articles (English & Chinese support).
-  - `📚 load ./book.epub`: Parse and read local EPUB files natively in-browser.
-- **Code-style Annotations**: Tap the line number gutter to add inline `// comments` to any line.
-- **Geek Sync**: Sync your annotations to a private GitHub Gist via Personal Access Token. No proprietary backend required.
+### SYSTEM FEATURES
 
-## 🛠️ Tech Stack
+- **INTERFACE**: Monochromatic color palette with zero-radius UI components. No graphical ornaments or emojis.
+- **PARSER**: Custom regex-based tokenization engine for applying code-like syntax highlighting to natural language.
+- **DATA SOURCES**:
+  - `[ R ] RANDOM`: Integrates with Wikipedia API to fetch articles.
+  - `[ ≡ ] TOPICS`: Selectable predefined domain keywords (Astrophysics, Computer Science, Cyberpunk, etc.) for targeted pseudo-random fetching.
+  - `[ S ] SEARCH`: Direct querying of the Wikipedia database.
+  - `[ U ] UPLOAD`: Local parsing of EPUB format via JSZip. No server processing.
+- **ANNOTATION**: Line-number based notation system mapping text to `// comment` blocks. Stored via IndexedDB.
+- **SYNCHRONIZATION**: Native integration with GitHub API. Pushes local annotations to a private GitHub Gist via Personal Access Token.
+- **PWA**: Full offline capability via Service Workers.
 
-- Vanilla HTML / CSS / JavaScript
-- [JSZip](https://stuk.github.io/jszip/) for EPUB parsing
-- IndexedDB for local caching and offline storage
-- Service Workers for PWA capabilities
-- GitHub Gists API for cloud sync
+### DEPLOYMENT INSTRUCTIONS
 
-## 📦 Usage
-
-To run the project locally, you just need a basic HTTP server.
+Execute the following commands to initialize the environment:
 
 ```bash
-# Clone the repository
 git clone https://github.com/fukkix/read.sh.git
 cd read.sh
-
-# Run a local server (Python example)
 python -m http.server 8080
+```
+Access via browser at `http://localhost:8080`.
 
-# Or using Node.js (npx)
-npx http-server -p 8080
+For Cloudflare Worker deployment:
+```bash
+npx wrangler deploy
 ```
 
-Then visit `http://localhost:8080` in your browser. You can also install it as a PWA on your mobile device.
-
-## ☁️ GitHub Sync Setup
-
-1. Go to your [GitHub Developer Settings](https://github.com/settings/tokens) and generate a new Personal Access Token (classic) with the `gist` scope.
-2. In the app, click the `⚙️` settings icon.
-3. Paste your Token. Leave the Gist ID blank for the first sync (it will create one automatically).
-4. Click Save, write some annotations, and click `☁️ push` in the status bar!
-
 ---
-*Created by Antigravity*
+
+## ZH
+
+**状态: 运行中**
+**类型: PWA 阅读器 / 终端仿真 UI**
+
+read.sh 是一款极简的、离线优先的渐进式 Web 应用，旨在终端美学环境中提供纯文本阅读功能。它利用正则表达式解析并对自然语言进行类似代码语法的着色渲染。
+
+### 系统特性
+
+- **交互界面**: 单色系终端配色，完全移除圆角 UI 组件。无多余图形修饰及表情符号。
+- **解析引擎**: 基于正则匹配的自定义词法分析器，将自然语言转换为高亮的代码风格序列。
+- **数据源**:
+  - `[ R ] 随机提取`: 接入维基百科 API 进行词条抓取。
+  - `[ ≡ ] 领域知识库`: 预置特定学科的分类种子词库（如天体物理、计算机科学、赛博朋克等），实现定向伪随机获取。
+  - `[ S ] 全文检索`: 对维基百科数据库进行直接检索。
+  - `[ U ] 本地载入`: 通过 JSZip 实现纯前端 EPUB 文件解析，无服务端数据驻留。
+- **批注系统**: 基于行号定位的注释注入模块，支持在任意文本行生成 `// 备注`。数据持久化依赖系统底层 IndexedDB。
+- **云端同步**: 原生集成 GitHub API。通过 Personal Access Token 将本地批注数据推送至私有 GitHub Gist。
+- **PWA**: 借助 Service Workers 实现断网环境下的完全读写能力。
+
+### 部署指令
+
+执行以下命令以初始化运行环境：
+
+```bash
+git clone https://github.com/fukkix/read.sh.git
+cd read.sh
+python -m http.server 8080
+```
+通过浏览器访问 `http://localhost:8080`。
+
+通过 Cloudflare Worker 进行边缘部署：
+```bash
+npx wrangler deploy
+```
