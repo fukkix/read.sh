@@ -84,6 +84,7 @@ const DB = (() => {
         description: entry.description || '',
         lang: entry.lang || 'en',
         source: entry.source || 'Wikipedia',
+        domain: entry.domain || 'any',
         timestamp: Date.now()
       });
       transaction.oncomplete = resolve;
