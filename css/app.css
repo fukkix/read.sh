@@ -367,6 +367,12 @@ footer {
   background: var(--bg-hover);
 }
 
+.topic-tag.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+
 /* ── Annotations ──────────────────────────────────────────── */
 .inline-annotation {
   color: var(--accent);
