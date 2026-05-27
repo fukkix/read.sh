@@ -461,6 +461,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.lang = state.lang === 'en' ? 'zh' : 'en';
     els.langToggle.textContent = state.lang.toUpperCase();
     await DB.setSetting('lang', state.lang);
+    els.topicGrid.innerHTML = ''; // Force re-render of topics modal
+    updateTopicLabel();
     if (state.mode === 'wiki') {
       loadRandomWiki();
     }
@@ -471,7 +473,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (state.selectedTopics.length === 0) {
       els.currentTopicLabel.textContent = 'ANY';
     } else if (state.selectedTopics.length === 1) {
-      els.currentTopicLabel.textContent = Wikipedia.DOMAINS[state.selectedTopics[0]].name;
+      els.currentTopicLabel.textContent = Wikipedia.DOMAINS[state.selectedTopics[0]].name[state.lang];
     } else {
       els.currentTopicLabel.textContent = state.selectedTopics.length + ' TOPICS';
     }
@@ -493,7 +495,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!els.topicGrid.querySelector('.topic-tag')) {
       let html = `<div class="topic-tag" data-val="any">[ * ] ANY</div>`;
       for (const [key, config] of Object.entries(Wikipedia.DOMAINS)) {
-        html += `<div class="topic-tag" data-val="${key}">[ ${key.toUpperCase()} ] ${config.name}</div>`;
+        html += `<div class="topic-tag" data-val="${key}">[ ${key.toUpperCase()} ] ${config.name[state.lang]}</div>`;
       }
       els.topicGrid.innerHTML = html;
     }
