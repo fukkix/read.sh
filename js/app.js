@@ -17,7 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnRandom: document.getElementById('btn-random'),
     btnSearch: document.getElementById('btn-search'),
     btnUpload: document.getElementById('btn-upload'),
+    btnUploadFolder: document.getElementById('btn-upload-folder'),
     fileInput: document.getElementById('file-input'),
+    folderInput: document.getElementById('folder-input'),
     modalSearch: document.getElementById('modal-search'),
     searchInput: document.getElementById('search-input'),
     searchResults: document.getElementById('search-results'),
@@ -280,6 +282,93 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  async function handleMarkdownFile(file) {
+    try {
+      setLoader(true, `> parsing Markdown: ${file.name}...`);
+      state.mode = 'epub'; // reuse epub chapter system
+      
+      const text = await MarkdownParser.readFileText(file);
+      const parsed = MarkdownParser.parseFile(text, file.name);
+      
+      state.epub.book = {
+        title: parsed.title,
+        author: '',
+        chapters: [{ title: parsed.title, content: parsed.content }]
+      };
+      
+      await loadEpubChapter(0);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to parse Markdown: ' + e.message);
+      state.mode = 'none';
+      updateHeaderControls();
+    } finally {
+      setLoader(false);
+    }
+  }
+
+  async function handleFolderUpload(files) {
+    if (!files || files.length === 0) return;
+    try {
+      // Filter to .md files only
+      const mdFiles = Array.from(files).filter(f =>
+        f.name.endsWith('.md') && !f.name.startsWith('.')
+      );
+      
+      if (mdFiles.length === 0) {
+        alert('No Markdown files found in folder.');
+        return;
+      }
+      
+      setLoader(true, `> scanning vault: ${mdFiles.length} notes found...`);
+      state.mode = 'epub';
+      
+      const bookData = MarkdownParser.parseFiles(mdFiles);
+      if (!bookData) {
+        alert('No readable .md files found.');
+        state.mode = 'none';
+        updateHeaderControls();
+        setLoader(false);
+        return;
+      }
+      
+      // Read all file contents
+      for (let i = 0; i < bookData.chapters.length; i++) {
+        setLoader(true, `> reading ${i + 1}/${bookData.chapters.length}: ${bookData.chapters[i].title}...`);
+        const text = await MarkdownParser.readFileText(bookData.chapters[i].file);
+        const cleaned = MarkdownParser.cleanMarkdown(text);
+        bookData.chapters[i].content = cleaned;
+        delete bookData.chapters[i].file; // free reference
+      }
+      
+      state.epub.book = bookData;
+      
+      let savedIdx = await DB.getSetting(`epub_idx_${bookData.title}`) || 0;
+      if (savedIdx >= bookData.chapters.length) savedIdx = 0;
+      
+      await loadEpubChapter(savedIdx);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to load vault: ' + e.message);
+      state.mode = 'none';
+      updateHeaderControls();
+    } finally {
+      setLoader(false);
+    }
+  }
+
+  function handleFileUpload(file) {
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'epub') {
+      handleEpubUpload(file);
+    } else if (ext === 'md' || ext === 'markdown' || ext === 'txt') {
+      handleMarkdownFile(file);
+    } else {
+      alert('Unsupported format. Use .epub or .md files.');
+    }
+  }
+
   // ── Event Listeners ───────────────────────────────────────
   
   els.btnNext.addEventListener('click', loadRandomWiki);
@@ -325,9 +414,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   els.btnRandom.addEventListener('click', loadRandomWiki);
   
   els.btnUpload.addEventListener('click', () => els.fileInput.click());
+  els.btnUploadFolder.addEventListener('click', () => els.folderInput.click());
+  
   els.fileInput.addEventListener('change', (e) => {
-    handleEpubUpload(e.target.files[0]);
-    e.target.value = ''; // reset
+    handleFileUpload(e.target.files[0]);
+    e.target.value = '';
+  });
+  
+  els.folderInput.addEventListener('change', (e) => {
+    handleFolderUpload(e.target.files);
+    e.target.value = '';
   });
 
   els.langToggle.addEventListener('click', async () => {
