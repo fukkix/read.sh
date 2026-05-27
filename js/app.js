@@ -35,7 +35,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentTopicLabel: document.getElementById('current-topic-label'),
     selectedTopicVal: document.getElementById('selected-topic-val'),
     btnNext: document.getElementById('btn-next'),
-    btnHome: document.getElementById('btn-home')
+    btnHome: document.getElementById('btn-home'),
+    btnEpubToc: document.getElementById('btn-epub-toc'),
+    btnEpubPrev: document.getElementById('btn-epub-prev'),
+    btnEpubNext: document.getElementById('btn-epub-next'),
+    modalToc: document.getElementById('modal-toc'),
+    tocList: document.getElementById('toc-list')
   };
 
   let state = {
@@ -46,7 +51,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderedHTML: '', // syntax highlighted html
     progress: 0,
     annotations: {},
-    currentLineNum: null
+    currentLineNum: null,
+    epub: { book: null, currentIdx: 0 }
   };
 
   // ── Initialization ────────────────────────────────────────
@@ -72,6 +78,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     els.loaderText.textContent = text;
     if (active) els.loader.classList.add('active');
     else els.loader.classList.remove('active');
+  }
+
+  function updateHeaderControls() {
+    els.btnHome.classList.add('d-none');
+    els.btnNext.classList.add('d-none');
+    els.btnEpubToc.classList.add('d-none');
+    els.btnEpubPrev.classList.add('d-none');
+    els.btnEpubNext.classList.add('d-none');
+
+    if (state.mode !== 'none') {
+      els.btnHome.classList.remove('d-none');
+    }
+    
+    if (state.mode === 'wiki') {
+      els.btnNext.classList.remove('d-none');
+    } else if (state.mode === 'epub' && state.epub.book) {
+      els.btnEpubToc.classList.remove('d-none');
+      els.btnEpubPrev.classList.remove('d-none');
+      els.btnEpubNext.classList.remove('d-none');
+      
+      els.btnEpubPrev.style.opacity = state.epub.currentIdx > 0 ? '1' : '0.3';
+      els.btnEpubPrev.style.pointerEvents = state.epub.currentIdx > 0 ? 'auto' : 'none';
+      
+      els.btnEpubNext.style.opacity = state.epub.currentIdx < state.epub.book.chapters.length - 1 ? '1' : '0.3';
+      els.btnEpubNext.style.pointerEvents = state.epub.currentIdx < state.epub.book.chapters.length - 1 ? 'auto' : 'none';
+    }
   }
 
   async function renderContent(title, textContent, sourceInfo) {
@@ -137,12 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     els.editorContent.innerHTML = html;
     
     els.splash.classList.add('hidden');
-    els.btnHome.classList.remove('d-none');
-    if (state.mode === 'wiki') {
-      els.btnNext.classList.remove('d-none');
-    } else {
-      els.btnNext.classList.add('d-none');
-    }
+    updateHeaderControls();
     
     els.scrollArea.scrollTop = 0;
     updateProgress();
@@ -170,6 +197,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       els.progressText.textContent = `${p}%`;
       els.progressBar.textContent = bar;
+
+      if (state.mode === 'epub' && state.epub.book) {
+        DB.setSetting(`epub_scroll_${state.epub.book.title}_${state.epub.currentIdx}`, st);
+      }
     }
   }
 
@@ -195,9 +226,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) {
       console.error(e);
       alert('Failed to load Wikipedia entry. Offline?');
+      state.mode = 'none';
+      updateHeaderControls();
     } finally {
       setLoader(false);
     }
+  }
+
+  async function loadEpubChapter(idx) {
+    if (!state.epub.book || idx < 0 || idx >= state.epub.book.chapters.length) return;
+    
+    setLoader(true, `> loading chapter ${idx + 1}...`);
+    state.epub.currentIdx = idx;
+    await DB.setSetting(`epub_idx_${state.epub.book.title}`, idx);
+    
+    const chapter = state.epub.book.chapters[idx];
+    const textContent = `// ── ${chapter.title || 'Chapter ' + (idx + 1)} ──\n\n${chapter.content}`;
+    
+    const chapterTitle = `${state.epub.book.title}__ch${idx}`;
+    await renderContent(chapterTitle, textContent, `Local EPUB (Ch ${idx+1}/${state.epub.book.chapters.length})`);
+    
+    els.tabName.textContent = state.epub.book.title + `.epub [${idx+1}/${state.epub.book.chapters.length}]`;
+    updateHeaderControls();
+    
+    const savedScroll = await DB.getSetting(`epub_scroll_${state.epub.book.title}_${idx}`) || 0;
+    els.scrollArea.scrollTop = savedScroll;
+    setLoader(false);
   }
 
   async function handleEpubUpload(file) {
@@ -207,20 +261,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       state.mode = 'epub';
       
       const book = await EpubParser.parse(file);
+      state.epub.book = book;
       
-      // Combine chapters into one text for simplicity in MVP
-      const textContent = book.chapters.map(ch => {
-        return `// ── ${ch.title || 'Chapter'} ──\n\n${ch.content}`;
-      }).join('\n\n');
-      
-      await renderContent(book.title, textContent, 'Local EPUB');
-      
-      // Save to DB
       DB.saveBook({ title: book.title, author: book.author, data: file });
+      
+      let savedIdx = await DB.getSetting(`epub_idx_${book.title}`) || 0;
+      if (savedIdx >= book.chapters.length) savedIdx = 0;
+      
+      await loadEpubChapter(savedIdx);
       
     } catch (e) {
       console.error(e);
       alert('Failed to parse EPUB: ' + e.message);
+      state.mode = 'none';
+      updateHeaderControls();
     } finally {
       setLoader(false);
     }
@@ -232,12 +286,40 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   els.btnHome.addEventListener('click', () => {
     els.splash.classList.remove('hidden');
-    els.btnHome.classList.add('d-none');
-    els.btnNext.classList.add('d-none');
+    state.mode = 'none';
+    updateHeaderControls();
     els.tabName.textContent = '~/welcome';
     els.editorContent.innerHTML = '';
     els.gutter.innerHTML = '';
-    state.mode = 'none';
+    state.epub.book = null;
+  });
+
+  els.btnEpubPrev.addEventListener('click', () => loadEpubChapter(state.epub.currentIdx - 1));
+  els.btnEpubNext.addEventListener('click', () => loadEpubChapter(state.epub.currentIdx + 1));
+  
+  els.btnEpubToc.addEventListener('click', () => {
+    if (!state.epub.book) return;
+    let html = '';
+    state.epub.book.chapters.forEach((ch, i) => {
+      const active = i === state.epub.currentIdx ? 'selected' : '';
+      html += `<div class="cmd-item ${active}" data-idx="${i}">
+                 <div class="cmd-title">${i + 1}. ${ch.title || 'Chapter ' + (i + 1)}</div>
+               </div>`;
+    });
+    els.tocList.innerHTML = html;
+    els.modalToc.classList.add('active');
+  });
+
+  els.modalToc.addEventListener('click', (e) => {
+    if (e.target === els.modalToc) els.modalToc.classList.remove('active');
+  });
+
+  els.tocList.addEventListener('click', (e) => {
+    const item = e.target.closest('.cmd-item');
+    if (!item) return;
+    const idx = parseInt(item.dataset.idx, 10);
+    els.modalToc.classList.remove('active');
+    loadEpubChapter(idx);
   });
 
   els.btnRandom.addEventListener('click', loadRandomWiki);
