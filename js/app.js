@@ -165,9 +165,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   async function loadRandomWiki() {
     try {
-      setLoader(true, `> fetching ${state.lang.toUpperCase()} wiki...`);
+      const selectedDomain = document.querySelector('input[name="domain"]:checked').value;
+      setLoader(true, `> fetching ${state.lang.toUpperCase()} wiki (${selectedDomain})...`);
       state.mode = 'wiki';
-      const entry = await Wikipedia.fetchRandom(state.lang);
+      const entry = await Wikipedia.fetchRandom(state.lang, selectedDomain);
       
       // Fetch full text
       setLoader(true, `> fetching extract: ${entry.title}...`);

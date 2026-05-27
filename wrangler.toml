@@ -1,0 +1,7 @@
+name = "read-sh"
+main = "worker.js"
+compatibility_date = "2024-05-27"
+
+# 绑定静态资源目录（因为我们的代码都在根目录，所以写 ./）
+[assets]
+directory = "./"

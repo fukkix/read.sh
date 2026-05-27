@@ -40,7 +40,7 @@
   --accent-glow: rgba(82, 139, 156, 0.15);
 
   /* Fonts */
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
   --font-ui:   'Inter', system-ui, -apple-system, sans-serif;
 
   /* Layout */

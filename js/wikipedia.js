@@ -15,6 +15,21 @@ const Wikipedia = (() => {
   function base(lang) { return REST[lang] || REST.en; }
   function api(lang)  { return ACTION[lang] || ACTION.en; }
 
+  const DOMAINS = {
+    space: {
+      en: ['Astrophysics', 'Cosmology', 'Space exploration', 'Quantum mechanics', 'Black hole', 'General relativity'],
+      zh: ['天体物理学', '宇宙学', '太空探索', '量子力学', '黑洞', '广义相对论', '星系']
+    },
+    history: {
+      en: ['World history', 'Ancient Rome', 'Ming dynasty', 'Industrial Revolution', 'Cold War', 'Renaissance'],
+      zh: ['世界历史', '古罗马', '明朝', '工业革命', '冷战', '文艺复兴', '中世纪']
+    },
+    art: {
+      en: ['History of art', 'Modern literature', 'Baroque', 'Romanticism', 'Classical music', 'Postmodernism'],
+      zh: ['艺术史', '文学', '巴洛克', '浪漫主义', '古典音乐', '后现代主义', '印象派']
+    }
+  };
+
   function normalizeEntry(data, lang) {
     return {
       title:       data.title || '',
@@ -27,13 +42,23 @@ const Wikipedia = (() => {
     };
   }
 
-  async function fetchRandom(lang = 'en') {
-    const res = await fetch(`${base(lang)}/page/random/summary`, {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return normalizeEntry(data, lang);
+  async function fetchRandom(lang = 'en', domain = 'any') {
+    if (domain === 'any' || !DOMAINS[domain]) {
+      const res = await fetch(`${base(lang)}/page/random/summary`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return normalizeEntry(data, lang);
+    } else {
+      const keywords = DOMAINS[domain][lang];
+      const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
+      const results = await search(randomKeyword, lang);
+      if (results.length === 0) throw new Error('No results for domain keyword');
+      const limit = Math.min(10, results.length);
+      const randomEntry = results[Math.floor(Math.random() * limit)];
+      return await fetchSummary(randomEntry.title, lang);
+    }
   }
 
   async function fetchSummary(title, lang = 'en') {
