@@ -28,7 +28,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     modalSettings: document.getElementById('modal-settings'),
     settingToken: document.getElementById('setting-token'),
     settingGist: document.getElementById('setting-gist'),
-    btnSaveSettings: document.getElementById('btn-save-settings')
+    btnSaveSettings: document.getElementById('btn-save-settings'),
+    btnOpenTopics: document.getElementById('btn-open-topics'),
+    modalTopics: document.getElementById('modal-topics'),
+    topicGrid: document.getElementById('topic-grid'),
+    currentTopicLabel: document.getElementById('current-topic-label'),
+    selectedTopicVal: document.getElementById('selected-topic-val')
   };
 
   let state = {
@@ -165,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   async function loadRandomWiki() {
     try {
-      const selectedDomain = document.querySelector('input[name="domain"]:checked').value;
+      const selectedDomain = els.selectedTopicVal.value;
       setLoader(true, `> fetching ${state.lang.toUpperCase()} wiki (${selectedDomain})...`);
       state.mode = 'wiki';
       const entry = await Wikipedia.fetchRandom(state.lang, selectedDomain);
@@ -231,6 +236,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Topics Logic
+  els.btnOpenTopics.addEventListener('click', () => {
+    // Generate grid if empty
+    if (!els.topicGrid.innerHTML.trim()) {
+      let html = `<div class="topic-tag" data-val="any">[ * ] ANY</div>`;
+      for (const [key, config] of Object.entries(Wikipedia.DOMAINS)) {
+        html += `<div class="topic-tag" data-val="${key}">[ ${key.toUpperCase()} ] ${config.name}</div>`;
+      }
+      els.topicGrid.innerHTML = html;
+    }
+    els.modalTopics.classList.add('active');
+  });
+
+  els.modalTopics.addEventListener('click', (e) => {
+    if (e.target === els.modalTopics) els.modalTopics.classList.remove('active');
+  });
+
+  els.topicGrid.addEventListener('click', (e) => {
+    const tag = e.target.closest('.topic-tag');
+    if (!tag) return;
+    
+    const val = tag.dataset.val;
+    els.selectedTopicVal.value = val;
+    
+    // Update label
+    if (val === 'any') {
+      els.currentTopicLabel.textContent = 'ANY';
+    } else {
+      els.currentTopicLabel.textContent = Wikipedia.DOMAINS[val].name;
+    }
+    
+    els.modalTopics.classList.remove('active');
+    
+    // Uncheck "ANY" radio if user picked something else, or check it if they picked ANY
+    const radioAny = document.querySelector('input[name="domain"][value="any"]');
+    if (radioAny) radioAny.checked = (val === 'any');
+  });
+
   // Annotation Logic
   els.gutter.addEventListener('click', (e) => {
     if (e.target.classList.contains('line-num')) {
@@ -289,11 +332,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     try {
-      els.btnSync.textContent = '☁️ syncing...';
+      els.btnSync.textContent = '[ SYNCING... ]';
       const allAnnotations = await GistSync.getAllAnnotationsFromDB();
       if (allAnnotations.length === 0) {
         alert('No annotations to sync.');
-        els.btnSync.textContent = '☁️ push';
+        els.btnSync.textContent = '[ PUSH ]';
         return;
       }
       
@@ -304,13 +347,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         els.settingGist.value = res.id;
         await DB.setSetting('ghGist', res.id);
       }
-      els.btnSync.textContent = '✓ synced';
-      setTimeout(() => els.btnSync.textContent = '☁️ push', 3000);
+      els.btnSync.textContent = '[ SYNCED ]';
+      setTimeout(() => els.btnSync.textContent = '[ PUSH ]', 3000);
     } catch (err) {
       console.error(err);
       alert('Sync failed: ' + err.message);
-      els.btnSync.textContent = '⚠️ error';
-      setTimeout(() => els.btnSync.textContent = '☁️ push', 3000);
+      els.btnSync.textContent = '[ ERROR ]';
+      setTimeout(() => els.btnSync.textContent = '[ PUSH ]', 3000);
     }
   });
 
