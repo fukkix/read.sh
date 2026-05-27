@@ -389,3 +389,6 @@ footer {
   color: var(--text-primary);
   background: var(--bg-hover);
 }
+
+/* ── Utilities ────────────────────────────────────────────── */
+.d-none { display: none !important; }

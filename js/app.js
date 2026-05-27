@@ -33,7 +33,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     modalTopics: document.getElementById('modal-topics'),
     topicGrid: document.getElementById('topic-grid'),
     currentTopicLabel: document.getElementById('current-topic-label'),
-    selectedTopicVal: document.getElementById('selected-topic-val')
+    selectedTopicVal: document.getElementById('selected-topic-val'),
+    btnNext: document.getElementById('btn-next'),
+    btnHome: document.getElementById('btn-home')
   };
 
   let state = {
@@ -135,6 +137,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     els.editorContent.innerHTML = html;
     
     els.splash.classList.add('hidden');
+    els.btnHome.classList.remove('d-none');
+    if (state.mode === 'wiki') {
+      els.btnNext.classList.remove('d-none');
+    } else {
+      els.btnNext.classList.add('d-none');
+    }
+    
     els.scrollArea.scrollTop = 0;
     updateProgress();
   }
@@ -219,6 +228,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Event Listeners ───────────────────────────────────────
   
+  els.btnNext.addEventListener('click', loadRandomWiki);
+  
+  els.btnHome.addEventListener('click', () => {
+    els.splash.classList.remove('hidden');
+    els.btnHome.classList.add('d-none');
+    els.btnNext.classList.add('d-none');
+    els.tabName.textContent = '~/welcome';
+    els.editorContent.innerHTML = '';
+    els.gutter.innerHTML = '';
+    state.mode = 'none';
+  });
+
   els.btnRandom.addEventListener('click', loadRandomWiki);
   
   els.btnUpload.addEventListener('click', () => els.fileInput.click());
