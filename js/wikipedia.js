@@ -116,9 +116,9 @@ const Wikipedia = (() => {
     if (domain === 'any' || !DOMAINS[domain]) {
       // Retry loop for true random
       for (let i = 0; i < 3; i++) {
-        const res = await fetch(`${base(lang)}/page/random/summary`, {
-          headers: { 'Accept': 'application/json' }
-        });
+        const headers = { 'Accept': 'application/json' };
+        if (lang === 'zh') headers['Accept-Language'] = 'zh-cn';
+        const res = await fetch(`${base(lang)}/page/random/summary`, { headers });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!readTitles.has(data.title)) {
@@ -168,7 +168,8 @@ const Wikipedia = (() => {
 
   async function fetchLinks(title, lang = 'en') {
     const slug = encodeURIComponent(title.replace(/\s+/g, '_'));
-    const url = `${api(lang)}?action=query&titles=${slug}&prop=links&pllimit=50&plnamespace=0&format=json&origin=*`;
+    const variant = lang === 'zh' ? '&variant=zh-cn' : '';
+    const url = `${api(lang)}?action=query&titles=${slug}&prop=links&pllimit=50&plnamespace=0&format=json&origin=*${variant}`;
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
@@ -180,9 +181,9 @@ const Wikipedia = (() => {
 
   async function fetchSummary(title, lang = 'en') {
     const slug = encodeURIComponent(title.replace(/\s+/g, '_'));
-    const res = await fetch(`${base(lang)}/page/summary/${slug}`, {
-      headers: { 'Accept': 'application/json' }
-    });
+    const headers = { 'Accept': 'application/json' };
+    if (lang === 'zh') headers['Accept-Language'] = 'zh-cn';
+    const res = await fetch(`${base(lang)}/page/summary/${slug}`, { headers });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     return normalizeEntry(data, lang);
@@ -190,7 +191,8 @@ const Wikipedia = (() => {
 
   async function fetchFull(title, lang = 'en') {
     const slug = encodeURIComponent(title.replace(/\s+/g, '_'));
-    const url = `${api(lang)}?action=query&titles=${slug}&prop=extracts&explaintext=true&exsectionformat=plain&format=json&origin=*`;
+    const variant = lang === 'zh' ? '&variant=zh-cn' : '';
+    const url = `${api(lang)}?action=query&titles=${slug}&prop=extracts&explaintext=true&exsectionformat=plain&format=json&origin=*${variant}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -203,7 +205,8 @@ const Wikipedia = (() => {
 
   async function search(query, lang = 'en') {
     const q = encodeURIComponent(query);
-    const url = `${api(lang)}?action=opensearch&search=${q}&limit=12&format=json&origin=*`;
+    const variant = lang === 'zh' ? '&variant=zh-cn' : '';
+    const url = `${api(lang)}?action=opensearch&search=${q}&limit=12&format=json&origin=*${variant}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
