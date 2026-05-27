@@ -32,6 +32,9 @@
       </div>
       
       <div class="header-actions">
+        <button id="btn-epub-toc" class="btn-icon d-none" title="Table of Contents">[ ≡ ] TOC</button>
+        <button id="btn-epub-prev" class="btn-icon d-none" title="Prev Chapter">[ &lt; ]</button>
+        <button id="btn-epub-next" class="btn-icon d-none" title="Next Chapter">[ &gt; ]</button>
         <button id="btn-home" class="btn-icon d-none" title="Home">[ HOME ]</button>
         <button id="btn-next" class="btn-icon d-none" title="Next Random">[ NEXT ]</button>
         <button id="btn-settings" class="btn-icon" title="Settings">[ SETTINGS ]</button>
@@ -146,6 +149,16 @@
     <div class="cmd-palette" style="max-width: 500px;">
       <div class="cmd-title" style="padding: 16px 16px 0;">// SELECT TOPIC DOMAIN</div>
       <div id="topic-grid" class="topic-grid">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TOC Modal -->
+  <div id="modal-toc" class="modal-wrapper">
+    <div class="cmd-palette" style="max-width: 500px; height: 80vh; display: flex; flex-direction: column;">
+      <div class="cmd-title" style="padding: 16px 16px 0;">// TABLE OF CONTENTS</div>
+      <div id="toc-list" class="cmd-results" style="flex: 1; overflow-y: auto; margin-top: 8px;">
         <!-- Injected via JS -->
       </div>
     </div>
