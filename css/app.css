@@ -217,6 +217,31 @@ footer {
   margin-top: 4px;
 }
 
+.domain-selector {
+  display: flex;
+  gap: 12px;
+  padding: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.domain-selector label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color var(--dur-fast);
+}
+
+.domain-selector label:hover {
+  color: var(--text-primary);
+}
+
+.domain-selector input[type="radio"] {
+  accent-color: var(--accent);
+}
+
 /* ── Loaders ──────────────────────────────────────────────── */
 .loader-overlay {
   position: absolute;
