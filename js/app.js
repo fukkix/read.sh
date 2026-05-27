@@ -54,7 +54,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     progress: 0,
     annotations: {},
     currentLineNum: null,
-    epub: { book: null, currentIdx: 0 }
+    epub: { book: null, currentIdx: 0 },
+    selectedTopics: [] // empty = ANY
   };
 
   // ── Initialization ────────────────────────────────────────
@@ -212,10 +213,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   async function loadRandomWiki() {
     try {
-      const selectedDomain = els.selectedTopicVal.value;
-      setLoader(true, `> fetching ${state.lang.toUpperCase()} wiki (${selectedDomain})...`);
+      // Pick a random domain from selected topics, or 'any' if none selected
+      let domain = 'any';
+      if (state.selectedTopics.length > 0) {
+        domain = state.selectedTopics[Math.floor(Math.random() * state.selectedTopics.length)];
+      }
+      setLoader(true, `> fetching ${state.lang.toUpperCase()} wiki (${domain})...`);
       state.mode = 'wiki';
-      const entry = await Wikipedia.fetchRandom(state.lang, selectedDomain);
+      const entry = await Wikipedia.fetchRandom(state.lang, domain);
       
       // Fetch full text
       setLoader(true, `> fetching extract: ${entry.title}...`);
@@ -436,6 +441,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Topics Logic
+  function updateTopicLabel() {
+    if (state.selectedTopics.length === 0) {
+      els.currentTopicLabel.textContent = 'ANY';
+    } else if (state.selectedTopics.length === 1) {
+      els.currentTopicLabel.textContent = Wikipedia.DOMAINS[state.selectedTopics[0]].name;
+    } else {
+      els.currentTopicLabel.textContent = state.selectedTopics.length + ' TOPICS';
+    }
+  }
+
+  function refreshTopicGridState() {
+    els.topicGrid.querySelectorAll('.topic-tag').forEach(tag => {
+      const val = tag.dataset.val;
+      if (val === 'any') {
+        tag.classList.toggle('active', state.selectedTopics.length === 0);
+      } else {
+        tag.classList.toggle('active', state.selectedTopics.includes(val));
+      }
+    });
+  }
+
   els.btnOpenTopics.addEventListener('click', () => {
     // Generate grid if empty
     if (!els.topicGrid.querySelector('.topic-tag')) {
@@ -445,6 +471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       els.topicGrid.innerHTML = html;
     }
+    refreshTopicGridState();
     els.modalTopics.classList.add('active');
   });
 
@@ -457,20 +484,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!tag) return;
     
     const val = tag.dataset.val;
-    els.selectedTopicVal.value = val;
     
-    // Update label
     if (val === 'any') {
-      els.currentTopicLabel.textContent = 'ANY';
+      // Clear all selections = ANY mode
+      state.selectedTopics = [];
     } else {
-      els.currentTopicLabel.textContent = Wikipedia.DOMAINS[val].name;
+      const idx = state.selectedTopics.indexOf(val);
+      if (idx >= 0) {
+        // Deselect
+        state.selectedTopics.splice(idx, 1);
+      } else {
+        // Add to selection
+        state.selectedTopics.push(val);
+      }
     }
     
-    els.modalTopics.classList.remove('active');
-    
-    // Uncheck "ANY" radio if user picked something else, or check it if they picked ANY
-    const radioAny = document.querySelector('input[name="domain"][value="any"]');
-    if (radioAny) radioAny.checked = (val === 'any');
+    refreshTopicGridState();
+    updateTopicLabel();
   });
 
   // Annotation Logic
