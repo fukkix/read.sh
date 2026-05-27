@@ -370,6 +370,10 @@ footer {
   overflow-y: auto;
 }
 
+.topic-tag[data-val="any"] {
+  grid-column: 1 / -1;
+}
+
 .topic-tag {
   padding: 8px;
   border: 1px solid var(--border);
