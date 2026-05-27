@@ -337,7 +337,7 @@ footer {
 .cmd-desc { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Hide file input */
-#file-input { display: none; }
+#file-input, #folder-input { display: none; }
 
 .modal-wrapper.active {
   display: flex;

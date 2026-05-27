@@ -76,11 +76,19 @@
           <button class="cmd-btn" id="btn-upload">
             <span class="key">[ U ]</span>
             <div>
-              <div>$ load ./book.epub</div>
-              <div class="cmd-desc">Import local EPUB file</div>
+              <div>$ load ./file</div>
+              <div class="cmd-desc">Import EPUB or Markdown</div>
             </div>
           </button>
-          <input type="file" id="file-input" accept=".epub">
+          <button class="cmd-btn" id="btn-upload-folder">
+            <span class="key">[ D ]</span>
+            <div>
+              <div>$ load ./vault/</div>
+              <div class="cmd-desc">Import Obsidian vault folder</div>
+            </div>
+          </button>
+          <input type="file" id="file-input" accept=".epub,.md,.markdown,.txt">
+          <input type="file" id="folder-input" webkitdirectory>
           
         </div>
       </div>
@@ -169,6 +177,7 @@
   <script src="js/wikipedia.js"></script>
   <script src="js/highlighter.js"></script>
   <script src="js/epub.js"></script>
+  <script src="js/markdown.js"></script>
   <script src="js/sync.js"></script>
   <script src="js/app.js"></script>
   
