@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Elements
   const els = {
     splash: document.getElementById('splash'),
+    btnContinue: document.getElementById('btn-continue'),
+    continueTitle: document.getElementById('continue-title'),
     editorContent: document.getElementById('editor-content'),
     gutter: document.getElementById('gutter'),
     scrollArea: document.getElementById('editor-scroll'),
@@ -69,6 +71,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   const ghGist = await DB.getSetting('ghGist');
   if (ghToken) els.settingToken.value = ghToken;
   if (ghGist) els.settingGist.value = ghGist;
+
+  // Load last book
+  const lastBook = await DB.getSetting('last_book');
+  if (lastBook) {
+    els.continueTitle.textContent = lastBook.title;
+    els.btnContinue.classList.remove('d-none');
+    els.btnContinue.addEventListener('click', async () => {
+      setLoader(true, `> resuming ${lastBook.title}...`);
+      state.epub.book = lastBook;
+      state.mode = 'epub';
+      els.splash.classList.add('hidden');
+      let savedIdx = await DB.getSetting(`epub_idx_${lastBook.title}`) || 0;
+      if (savedIdx >= lastBook.chapters.length) savedIdx = 0;
+      await loadEpubChapter(savedIdx);
+      setLoader(false);
+    });
+  }
 
   // Register Service Worker
   if ('serviceWorker' in navigator) {
@@ -269,6 +288,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       const book = await EpubParser.parse(file);
       state.epub.book = book;
+      await DB.setSetting('last_book', book);
       
       DB.saveBook({ title: book.title, author: book.author, data: file });
       
@@ -300,6 +320,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         author: '',
         chapters: [{ title: parsed.title, content: parsed.content }]
       };
+      
+      await DB.setSetting('last_book', state.epub.book);
       
       await loadEpubChapter(0);
     } catch (e) {
@@ -347,6 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       
       state.epub.book = bookData;
+      await DB.setSetting('last_book', bookData);
       
       let savedIdx = await DB.getSetting(`epub_idx_${bookData.title}`) || 0;
       if (savedIdx >= bookData.chapters.length) savedIdx = 0;
