@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Topics Logic
   els.btnOpenTopics.addEventListener('click', () => {
     // Generate grid if empty
-    if (!els.topicGrid.innerHTML.trim()) {
+    if (!els.topicGrid.querySelector('.topic-tag')) {
       let html = `<div class="topic-tag" data-val="any">[ * ] ANY</div>`;
       for (const [key, config] of Object.entries(Wikipedia.DOMAINS)) {
         html += `<div class="topic-tag" data-val="${key}">[ ${key.toUpperCase()} ] ${config.name}</div>`;
