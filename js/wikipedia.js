@@ -75,23 +75,72 @@ const Wikipedia = (() => {
     };
   }
 
-  async function fetchRandom(lang = 'en', domain = 'any') {
+  async function fetchRandom(lang = 'en', domain = 'any', history = []) {
+    const readTitles = new Set(history.map(h => h.title));
+    
     if (domain === 'any' || !DOMAINS[domain]) {
-      const res = await fetch(`${base(lang)}/page/random/summary`, {
-        headers: { 'Accept': 'application/json' }
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      return normalizeEntry(data, lang);
+      // Retry loop for true random
+      for (let i = 0; i < 3; i++) {
+        const res = await fetch(`${base(lang)}/page/random/summary`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!readTitles.has(data.title)) {
+          return normalizeEntry(data, lang);
+        }
+      }
+      throw new Error('Could not find unread random article');
     } else {
+      const historyForDomain = history.filter(h => h.domain === domain);
+      
+      // 50% chance to do Wiki-Walk if we have history
+      if (historyForDomain.length > 0 && Math.random() < 0.5) {
+        const randomHist = historyForDomain[Math.floor(Math.random() * historyForDomain.length)];
+        const links = await fetchLinks(randomHist.title, lang);
+        const unreadLinks = links.filter(link => !readTitles.has(link.title));
+        
+        if (unreadLinks.length > 0) {
+          const randomLink = unreadLinks[Math.floor(Math.random() * unreadLinks.length)];
+          try {
+            return await fetchSummary(randomLink.title, lang);
+          } catch (e) {
+            // fallback if summary fetch fails
+          }
+        }
+      }
+      
+      // Seed Strategy or Fallback
       const keywords = DOMAINS[domain][lang];
-      const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
-      const results = await search(randomKeyword, lang);
-      if (results.length === 0) throw new Error('No results for domain keyword');
-      const limit = Math.min(10, results.length);
-      const randomEntry = results[Math.floor(Math.random() * limit)];
-      return await fetchSummary(randomEntry.title, lang);
+      for (let i = 0; i < 3; i++) {
+        const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
+        const results = await search(randomKeyword, lang);
+        const unreadResults = results.filter(r => !readTitles.has(r.title));
+        
+        if (unreadResults.length > 0) {
+          const limit = Math.min(10, unreadResults.length);
+          const randomEntry = unreadResults[Math.floor(Math.random() * limit)];
+          try {
+            return await fetchSummary(randomEntry.title, lang);
+          } catch (e) {
+            // fallback loop
+          }
+        }
+      }
+      throw new Error('No unread results found for domain after retries');
     }
+  }
+
+  async function fetchLinks(title, lang = 'en') {
+    const slug = encodeURIComponent(title.replace(/\s+/g, '_'));
+    const url = `${api(lang)}?action=query&titles=${slug}&prop=links&pllimit=50&plnamespace=0&format=json&origin=*`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const pages = data.query?.pages;
+    if (!pages) return [];
+    const page = Object.values(pages)[0];
+    return page.links || [];
   }
 
   async function fetchSummary(title, lang = 'en') {

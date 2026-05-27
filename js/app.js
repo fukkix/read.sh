@@ -239,7 +239,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       setLoader(true, `> fetching ${state.lang.toUpperCase()} wiki (${domain})...`);
       state.mode = 'wiki';
-      const entry = await Wikipedia.fetchRandom(state.lang, domain);
+      
+      const history = await DB.getHistory(500);
+      const entry = await Wikipedia.fetchRandom(state.lang, domain, history);
       
       // Fetch full text
       setLoader(true, `> fetching extract: ${entry.title}...`);
@@ -247,7 +249,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       await renderContent(entry.title, fullText, entry.source);
       
-      // Save history
+      // Save history with domain
+      entry.domain = domain;
       DB.addHistory(entry);
     } catch (e) {
       console.error(e);
