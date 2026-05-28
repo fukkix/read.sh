@@ -192,7 +192,7 @@ const Wikipedia = (() => {
   async function fetchFull(title, lang = 'en') {
     const slug = encodeURIComponent(title.replace(/\s+/g, '_'));
     const variant = lang === 'zh' ? '&variant=zh-cn' : '';
-    const url = `${api(lang)}?action=query&titles=${slug}&prop=extracts&explaintext=true&exsectionformat=plain&format=json&origin=*${variant}`;
+    const url = `${api(lang)}?action=query&titles=${slug}&prop=extracts|categories&clshow=!hidden&cllimit=20&explaintext=true&exsectionformat=plain&format=json&origin=*${variant}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -200,7 +200,21 @@ const Wikipedia = (() => {
     if (!pages) throw new Error('No pages returned');
     const page = Object.values(pages)[0];
     if (page.missing !== undefined) throw new Error('Article not found');
-    return page.extract || '';
+    
+    // Extract categories
+    let categories = [];
+    if (page.categories) {
+      categories = page.categories.map(c => {
+        let title = c.title;
+        // Strip namespace prefix (Category: or 分类:)
+        if (title.includes(':')) {
+          title = title.split(':').slice(1).join(':');
+        }
+        return title;
+      });
+    }
+    
+    return { extract: page.extract || '', categories };
   }
 
   async function search(query, lang = 'en') {
