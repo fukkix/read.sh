@@ -173,7 +173,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (thumbnail) {
       try {
-        const ascii = await Wikipedia.generateAsciiArt(thumbnail, 50); // limit to 50 chars wide
+        // Calculate dynamic width to prevent wrapping on mobile screens
+        const isMobile = window.innerWidth < 600;
+        const asciiWidth = isMobile ? 32 : 55;
+        const ascii = await Wikipedia.generateAsciiArt(thumbnail, asciiWidth);
         if (ascii) {
           header.push(` * @image`);
           header.push(...ascii.split('\n').map(line => ` * ${line}`));
