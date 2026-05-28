@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     modalToc: document.getElementById('modal-toc'),
     tocList: document.getElementById('toc-list'),
     historyList: document.getElementById('history-list'),
-    shortcutLegend: document.getElementById('shortcut-legend')
+    shortcutLegend: document.getElementById('shortcut-legend'),
+    toastContainer: document.getElementById('toast-container')
   };
 
   let state = {
@@ -166,6 +167,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       els.btnEpubNext.style.opacity = state.epub.currentIdx < state.epub.book.chapters.length - 1 ? '1' : '0.3';
       els.btnEpubNext.style.pointerEvents = state.epub.currentIdx < state.epub.book.chapters.length - 1 ? 'auto' : 'none';
     }
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.createElement('div');
+    t.className = 'toast' + (isError ? ' error' : '');
+    t.innerHTML = `> ${msg}`;
+    els.toastContainer.appendChild(t);
+    setTimeout(() => {
+      t.style.animation = 'toast-out 0.2s ease-out forwards';
+      setTimeout(() => t.remove(), 200);
+    }, 3000);
   }
 
   function updateShortcutLegend() {
@@ -323,7 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       DB.addHistory(entry);
     } catch (e) {
       console.error(e);
-      alert('Failed to load Wikipedia entry. Offline?');
+      showToast('Failed to load Wikipedia entry. Offline?');
       state.mode = 'none';
       updateHeaderControls();
     } finally {
@@ -376,7 +388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
     } catch (e) {
       console.error(e);
-      alert('Failed to parse EPUB: ' + e.message);
+      showToast('Failed to parse EPUB: ' + e.message);
       state.mode = 'none';
       updateHeaderControls();
     } finally {
@@ -403,7 +415,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await loadEpubChapter(0);
     } catch (e) {
       console.error(e);
-      alert('Failed to parse Markdown: ' + e.message);
+      showToast('Failed to parse Markdown: ' + e.message);
       state.mode = 'none';
       updateHeaderControls();
     } finally {
@@ -420,7 +432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       );
       
       if (mdFiles.length === 0) {
-        alert('No Markdown files found in folder.');
+        showToast('No Markdown files found in folder.');
         return;
       }
       
@@ -429,7 +441,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       const bookData = MarkdownParser.parseFiles(mdFiles);
       if (!bookData) {
-        alert('No readable .md files found.');
+        showToast('No readable .md files found.');
         state.mode = 'none';
         updateHeaderControls();
         setLoader(false);
@@ -454,7 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await loadEpubChapter(savedIdx);
     } catch (e) {
       console.error(e);
-      alert('Failed to load vault: ' + e.message);
+      showToast('Failed to load vault: ' + e.message);
       state.mode = 'none';
       updateHeaderControls();
     } finally {
@@ -470,7 +482,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (ext === 'md' || ext === 'markdown' || ext === 'txt') {
       handleMarkdownFile(file);
     } else {
-      alert('Unsupported format. Use .epub or .md files.');
+      showToast('Unsupported format. Use .epub or .md files.');
     }
   }
 
@@ -590,11 +602,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             categories: fullRes.categories
           });
         } else {
-          alert(`No ${newLang.toUpperCase()} translation found for "${state.title}".`);
+          showToast(`No ${newLang.toUpperCase()} translation found for "${state.title}".`);
         }
       } catch (err) {
         console.error(err);
-        alert('Translation request failed.');
+        showToast('Translation request failed.');
       } finally {
         setLoader(false);
       }
@@ -747,7 +759,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateShortcutLegend();
             await renderContent(entry.title, fullRes.extract, entry.source, fullRes.categories, fullRes.thumbnail);
           } catch(err) {
-            alert('This history entry lacks offline cache and cannot be fetched right now.');
+            showToast('This history entry lacks offline cache and cannot be fetched right now.');
           } finally {
             setLoader(false);
           }
@@ -770,14 +782,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const token = els.settingToken.value.trim();
     let gistId = els.settingGist.value.trim();
     if (!token) {
-      alert('Please set your GitHub Personal Access Token in settings first.');
+      showToast('Please set your GitHub Personal Access Token in settings first.');
       return;
     }
     try {
       els.btnSync.textContent = '[ SYNCING... ]';
       const allAnnotations = await GistSync.getAllAnnotationsFromDB();
       if (allAnnotations.length === 0) {
-        alert('No annotations to sync.');
+        showToast('No annotations to sync.');
         els.btnSync.textContent = '[ PUSH ]';
         return;
       }
@@ -793,7 +805,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => els.btnSync.textContent = '[ PUSH ]', 3000);
     } catch (err) {
       console.error(err);
-      alert('Sync failed: ' + err.message);
+      showToast('Sync failed: ' + err.message);
       els.btnSync.textContent = '[ ERROR ]';
       setTimeout(() => els.btnSync.textContent = '[ PUSH ]', 3000);
     }
@@ -899,7 +911,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     } catch (err) {
       console.error(err);
-      alert('Failed to load article');
+      showToast('Failed to load article');
     } finally {
       setLoader(false);
     }
