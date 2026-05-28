@@ -217,6 +217,21 @@ const Wikipedia = (() => {
     return { extract: page.extract || '', categories };
   }
 
+  async function fetchTranslation(title, fromLang, toLang) {
+    const slug = encodeURIComponent(title.replace(/\s+/g, '_'));
+    const url = `${api(fromLang)}?action=query&titles=${slug}&prop=langlinks&lllang=${toLang}&format=json&origin=*`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const pages = data.query?.pages;
+    if (!pages) return null;
+    const page = Object.values(pages)[0];
+    if (page.langlinks && page.langlinks.length > 0) {
+      return page.langlinks[0]['*'];
+    }
+    return null;
+  }
+
   async function search(query, lang = 'en') {
     const q = encodeURIComponent(query);
     const variant = lang === 'zh' ? '&variant=zh-cn' : '';
@@ -234,5 +249,5 @@ const Wikipedia = (() => {
     }));
   }
 
-  return { fetchRandom, fetchSummary, fetchFull, search, DOMAINS };
+  return { fetchRandom, fetchSummary, fetchFull, fetchTranslation, search, DOMAINS };
 })();
