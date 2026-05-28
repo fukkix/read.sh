@@ -205,6 +205,39 @@ footer {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  z-index: 2; /* Keep menu above books */
+}
+
+.ascii-books-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+  pointer-events: none;
+  color: var(--text-muted);
+  opacity: 0.3; /* Subtle background presence */
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+.ascii-book {
+  font-family: var(--font-mono);
+  font-size: clamp(8px, 1.2vw, 12px);
+  line-height: 1.1;
+  white-space: pre;
+  margin: 0;
+}
+
+@media (max-width: 800px) {
+  .ascii-books-container {
+    justify-content: center;
+  }
+  .ascii-book.right {
+    display: none;
+  }
 }
 
 .cmd-btn {
@@ -439,17 +472,17 @@ footer {
 
 /* ── Shortcut Legend ───────────────────────────────────────── */
 .shortcut-legend {
-  position: fixed;
-  bottom: calc(var(--status-h) + 8px);
-  right: 16px;
   font-size: 11px;
   color: var(--text-muted);
   pointer-events: none;
   font-family: var(--font-mono);
-  z-index: 100;
   opacity: 0.7;
+  padding: 4px 16px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-default);
+  text-align: right;
+  flex-shrink: 0;
 }
-
 @media (max-width: 600px) {
   .shortcut-legend {
     display: none;
