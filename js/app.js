@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  async function renderContent(title, textContent, sourceInfo) {
+  async function renderContent(title, textContent, sourceInfo, categories = []) {
     state.title = title;
     els.tabName.textContent = title + (state.mode === 'wiki' ? '.md' : '.txt');
     
@@ -144,7 +144,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       `/**`,
       ` * @entry   ${title}`,
       ` * @source  ${sourceInfo}`,
-      ` * @words   ~${words}`,
+      ` * @tags    ${categories.length > 0 ? categories.join(', ') : 'none'}`,
+      ` * @length  ~${words} words`,
       ` */`,
       ``,
       `// ` + '─'.repeat(40),
@@ -245,9 +246,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Fetch full text
       setLoader(true, `> fetching extract: ${entry.title}...`);
-      const fullText = await Wikipedia.fetchFull(entry.title, state.lang);
+      const fullRes = await Wikipedia.fetchFull(entry.title, state.lang);
       
-      await renderContent(entry.title, fullText, entry.source);
+      await renderContent(entry.title, fullRes.extract, entry.source, fullRes.categories);
       
       // Save history with domain
       entry.domain = domain;
@@ -666,8 +667,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       state.mode = 'wiki';
       setLoader(true, `> fetching extract: ${title}...`);
-      const fullText = await Wikipedia.fetchFull(title, state.lang);
-      await renderContent(title, fullText, `Wikipedia ${state.lang.toUpperCase()}`);
+      const fullRes = await Wikipedia.fetchFull(title, state.lang);
+      await renderContent(title, fullRes.extract, `Wikipedia ${state.lang.toUpperCase()}`, fullRes.categories);
       DB.addHistory({ title, lang: state.lang, source: `Wikipedia ${state.lang.toUpperCase()}` });
     } catch (err) {
       console.error(err);
