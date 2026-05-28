@@ -73,6 +73,9 @@ const Highlighter = (() => {
 
     let toks = tokenize(esc);
 
+    // Section Headers (Wiki style or Markdown)
+    toks = applyPat(toks, /^={2,4}\s+[^=]+\s+={2,4}$|^#{1,6}\s+.+$/, 'syn-kw');
+
     // Quoted strings (ASCII and curly)
     toks = applyPat(toks, /"[^"]{1,400}"|'[^']{1,400}'|“[^”]{1,400}”/, 'syn-str');
     // Years (1000–2099)
@@ -104,6 +107,9 @@ const Highlighter = (() => {
     }
 
     let toks = tokenize(esc);
+
+    // Section Headers
+    toks = applyPat(toks, /^={2,4}\s+[^=]+\s+={2,4}$|^#{1,6}\s+.+$/, 'syn-kw');
 
     // Book/title brackets 《》
     toks = applyPat(toks, /《[^》]{1,30}》/, 'syn-str');
