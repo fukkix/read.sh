@@ -40,11 +40,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     selectedTopicVal: document.getElementById('selected-topic-val'),
     btnNext: document.getElementById('btn-next'),
     btnHome: document.getElementById('btn-home'),
-    btnEpubToc: document.getElementById('btn-epub-toc'),
+    btnToc: document.getElementById('btn-toc'),
     btnEpubPrev: document.getElementById('btn-epub-prev'),
     btnEpubNext: document.getElementById('btn-epub-next'),
     modalToc: document.getElementById('modal-toc'),
-    tocList: document.getElementById('toc-list')
+    tocList: document.getElementById('toc-list'),
+    historyList: document.getElementById('history-list')
   };
 
   let state = {
@@ -99,16 +100,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Core Render Logic ─────────────────────────────────────
   
+  let loaderInterval = null;
   function setLoader(active, text = 'Loading...') {
-    els.loaderText.textContent = text;
-    if (active) els.loader.classList.add('active');
-    else els.loader.classList.remove('active');
+    if (active) {
+      els.loader.classList.add('active');
+      let p = 0;
+      clearInterval(loaderInterval);
+      loaderInterval = setInterval(() => {
+        p += Math.random() * 8 + 2;
+        if (p > 95) p = 95;
+        let filled = Math.floor(p / 5);
+        let bar = '▓'.repeat(filled) + '░'.repeat(20 - filled);
+        els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--accent)">[${bar}] ${Math.floor(p)}%</span>`;
+      }, 50);
+    } else {
+      els.loader.classList.remove('active');
+      clearInterval(loaderInterval);
+    }
   }
 
   function updateHeaderControls() {
     els.btnHome.classList.add('d-none');
     els.btnNext.classList.add('d-none');
-    els.btnEpubToc.classList.add('d-none');
+    els.btnToc.classList.add('d-none');
     els.btnEpubPrev.classList.add('d-none');
     els.btnEpubNext.classList.add('d-none');
 
@@ -118,8 +132,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (state.mode === 'wiki') {
       els.btnNext.classList.remove('d-none');
+      els.btnToc.classList.remove('d-none');
     } else if (state.mode === 'epub' && state.epub.book) {
-      els.btnEpubToc.classList.remove('d-none');
+      els.btnToc.classList.remove('d-none');
       els.btnEpubPrev.classList.remove('d-none');
       els.btnEpubNext.classList.remove('d-none');
       
@@ -131,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  async function renderContent(title, textContent, sourceInfo, categories = []) {
+  async function renderContent(title, textContent, sourceInfo, categories = [], thumbnail = null) {
     state.title = title;
     els.tabName.textContent = title + (state.mode === 'wiki' ? '.md' : '.txt');
     
@@ -153,12 +168,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       ` * @entry   ${title}`,
       ` * @source  ${sourceInfo}`,
       ` * @tags    ${categories.length > 0 ? categories.join(', ') : 'none'}`,
-      ` * @length  ~${words} ${state.lang === 'zh' ? 'chars' : 'words'}`,
-      ` */`,
-      ``,
-      `// ` + '─'.repeat(40),
-      ``
+      ` * @length  ~${words} ${state.lang === 'zh' ? 'chars' : 'words'}`
     ];
+    
+    if (thumbnail) {
+      try {
+        const ascii = await Wikipedia.generateAsciiArt(thumbnail, 50); // limit to 50 chars wide
+        if (ascii) {
+          header.push(` * @image`);
+          header.push(...ascii.split('\n').map(line => ` * ${line}`));
+        }
+      } catch (e) {
+        // ignore image error
+      }
+    }
+    
+    header.push(` */`, ``, `// ` + '─'.repeat(40), ``);
     
     // Build final lines array
     state.lines = [...header];
@@ -256,10 +281,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       setLoader(true, `> fetching extract: ${entry.title}...`);
       const fullRes = await Wikipedia.fetchFull(entry.title, state.lang);
       
-      await renderContent(entry.title, fullRes.extract, entry.source, fullRes.categories);
+      await renderContent(entry.title, fullRes.extract, entry.source, fullRes.categories, fullRes.thumbnail);
       
-      // Save history with domain
+      // Save history with domain and offline content
       entry.domain = domain;
+      entry.extract = fullRes.extract;
+      entry.categories = fullRes.categories;
       DB.addHistory(entry);
     } catch (e) {
       console.error(e);
@@ -426,15 +453,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   els.btnEpubPrev.addEventListener('click', () => loadEpubChapter(state.epub.currentIdx - 1));
   els.btnEpubNext.addEventListener('click', () => loadEpubChapter(state.epub.currentIdx + 1));
   
-  els.btnEpubToc.addEventListener('click', () => {
-    if (!state.epub.book) return;
+  els.btnToc.addEventListener('click', () => {
     let html = '';
-    state.epub.book.chapters.forEach((ch, i) => {
-      const active = i === state.epub.currentIdx ? 'selected' : '';
-      html += `<div class="cmd-item ${active}" data-idx="${i}">
-                 <div class="cmd-title">${i + 1}. ${ch.title || 'Chapter ' + (i + 1)}</div>
-               </div>`;
-    });
+    
+    if (state.mode === 'epub' && state.epub.book) {
+      state.epub.book.chapters.forEach((ch, i) => {
+        const active = i === state.epub.currentIdx ? 'selected' : '';
+        html += `<div class="cmd-item ${active}" data-epub-idx="${i}">
+                   <div class="cmd-title">${i + 1}. ${ch.title || 'Chapter ' + (i + 1)}</div>
+                 </div>`;
+      });
+    } else if (state.mode === 'wiki') {
+      let hasHeadings = false;
+      state.lines.forEach((line, idx) => {
+        const match = line.match(/^(={2,4})\s*(.+?)\s*\1$/);
+        if (match) {
+          hasHeadings = true;
+          const level = match[1].length; // 2, 3, or 4
+          const text = match[2];
+          const indent = '&nbsp;&nbsp;'.repeat(level - 2);
+          html += `<div class="cmd-item" data-line-idx="${idx}">
+                     <div class="cmd-title">${indent}${level > 2 ? '└ ' : ''}${text}</div>
+                   </div>`;
+        }
+      });
+      if (!hasHeadings) {
+        html = `<div class="cmd-item"><div class="cmd-title" style="color:var(--text-muted)">No headings found.</div></div>`;
+      }
+    } else {
+      return;
+    }
+    
     els.tocList.innerHTML = html;
     els.modalToc.classList.add('active');
   });
@@ -446,9 +495,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   els.tocList.addEventListener('click', (e) => {
     const item = e.target.closest('.cmd-item');
     if (!item) return;
-    const idx = parseInt(item.dataset.idx, 10);
-    els.modalToc.classList.remove('active');
-    loadEpubChapter(idx);
+    
+    if (item.dataset.epubIdx !== undefined) {
+      const idx = parseInt(item.dataset.epubIdx, 10);
+      els.modalToc.classList.remove('active');
+      loadEpubChapter(idx);
+    } else if (item.dataset.lineIdx !== undefined) {
+      const idx = parseInt(item.dataset.lineIdx, 10);
+      els.modalToc.classList.remove('active');
+      const lineEl = els.editorContent.children[idx];
+      if (lineEl) {
+        lineEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
   });
 
   els.btnRandom.addEventListener('click', loadRandomWiki);
@@ -476,7 +535,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const translatedTitle = await Wikipedia.fetchTranslation(state.title, oldLang, newLang);
         if (translatedTitle) {
           const fullRes = await Wikipedia.fetchFull(translatedTitle, newLang);
-          await renderContent(translatedTitle, fullRes.extract, `Wikipedia ${newLang.toUpperCase()}`, fullRes.categories);
+          await renderContent(translatedTitle, fullRes.extract, `Wikipedia ${newLang.toUpperCase()}`, fullRes.categories, fullRes.thumbnail);
           
           // Switch state successfully
           state.lang = newLang;
@@ -484,7 +543,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           await DB.setSetting('lang', state.lang);
           els.topicGrid.innerHTML = '';
           updateTopicLabel();
-          DB.addHistory({ title: translatedTitle, lang: newLang, source: `Wikipedia ${newLang.toUpperCase()}` });
+          DB.addHistory({ 
+            title: translatedTitle, 
+            lang: newLang, 
+            source: `Wikipedia ${newLang.toUpperCase()}`,
+            extract: fullRes.extract,
+            categories: fullRes.categories
+          });
         } else {
           alert(`No ${newLang.toUpperCase()} translation found for "${state.title}".`);
         }
@@ -605,8 +670,49 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Settings & Sync Logic
-  els.btnSettings.addEventListener('click', () => {
+  els.btnSettings.addEventListener('click', async () => {
     els.modalSettings.classList.add('active');
+    
+    // Load local history
+    const history = await DB.getHistory(100);
+    if (history.length === 0) {
+      els.historyList.innerHTML = `<div class="cmd-item"><div class="cmd-title" style="color: var(--text-muted);">No history found.</div></div>`;
+    } else {
+      els.historyList.innerHTML = history.map((item, idx) => `
+        <div class="cmd-item" data-idx="${idx}">
+          <div class="cmd-title">${item.title}</div>
+          <div class="cmd-desc">${new Date(item.timestamp).toLocaleString()} | ${item.domain.toUpperCase()} | ${item.lang.toUpperCase()}</div>
+        </div>
+      `).join('');
+      
+      els.historyList.onclick = async (e) => {
+        const row = e.target.closest('.cmd-item');
+        if (!row || !row.dataset.idx) return;
+        const entry = history[row.dataset.idx];
+        els.modalSettings.classList.remove('active');
+        
+        if (entry.extract) {
+          state.mode = 'wiki';
+          state.lang = entry.lang;
+          els.langToggle.textContent = state.lang.toUpperCase();
+          await renderContent(entry.title, entry.extract, `[OFFLINE] ${entry.source}`, entry.categories);
+        } else {
+          // Fallback to fetch from live if offline content missing
+          try {
+            setLoader(true, `> fetching ${entry.title}...`);
+            const fullRes = await Wikipedia.fetchFull(entry.title, entry.lang);
+            state.mode = 'wiki';
+            state.lang = entry.lang;
+            els.langToggle.textContent = state.lang.toUpperCase();
+            await renderContent(entry.title, fullRes.extract, entry.source, fullRes.categories, fullRes.thumbnail);
+          } catch(err) {
+            alert('This history entry lacks offline cache and cannot be fetched right now.');
+          } finally {
+            setLoader(false);
+          }
+        }
+      };
+    }
   });
 
   els.modalSettings.addEventListener('click', (e) => {
@@ -662,10 +768,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target === els.modalSearch) els.modalSearch.classList.remove('active');
   });
 
+  let selectedSearchIdx = -1;
+
+  function updateSearchSelection() {
+    const items = Array.from(els.searchResults.querySelectorAll('.cmd-item[data-title]'));
+    items.forEach((item, idx) => {
+      if (idx === selectedSearchIdx) {
+        item.style.backgroundColor = 'var(--bg-hover)';
+        item.style.borderColor = 'var(--accent)';
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.style.backgroundColor = 'transparent';
+        item.style.borderColor = 'transparent';
+      }
+    });
+  }
+
+  els.searchInput.addEventListener('keydown', (e) => {
+    const items = Array.from(els.searchResults.querySelectorAll('.cmd-item[data-title]'));
+    if (items.length === 0) return;
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedSearchIdx = (selectedSearchIdx + 1) % items.length;
+      updateSearchSelection();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedSearchIdx = (selectedSearchIdx - 1 + items.length) % items.length;
+      updateSearchSelection();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedSearchIdx >= 0 && selectedSearchIdx < items.length) {
+        items[selectedSearchIdx].click();
+      }
+    }
+  });
+
   let searchTimeout;
   els.searchInput.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     const q = e.target.value.trim();
+    selectedSearchIdx = -1;
     if (!q) {
       els.searchResults.innerHTML = '';
       return;
@@ -705,13 +848,63 @@ document.addEventListener('DOMContentLoaded', async () => {
       state.mode = 'wiki';
       setLoader(true, `> fetching extract: ${title}...`);
       const fullRes = await Wikipedia.fetchFull(title, state.lang);
-      await renderContent(title, fullRes.extract, `Wikipedia ${state.lang.toUpperCase()}`, fullRes.categories);
-      DB.addHistory({ title, lang: state.lang, source: `Wikipedia ${state.lang.toUpperCase()}` });
+      await renderContent(title, fullRes.extract, `Wikipedia ${state.lang.toUpperCase()}`, fullRes.categories, fullRes.thumbnail);
+      DB.addHistory({ 
+        title, 
+        lang: state.lang, 
+        source: `Wikipedia ${state.lang.toUpperCase()}`,
+        extract: fullRes.extract,
+        categories: fullRes.categories
+      });
     } catch (err) {
       console.error(err);
       alert('Failed to load article');
     } finally {
       setLoader(false);
+    }
+  });
+
+  // ── Global Keyboard Shortcuts (Vim / Geeks) ──
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      if (e.key === 'Escape') {
+        e.target.blur();
+        els.modalSearch.classList.remove('active');
+        els.modalSettings.classList.remove('active');
+        els.modalTopics.classList.remove('active');
+        els.modalToc.classList.remove('active');
+        els.modalAnnotate.classList.remove('active');
+      }
+      return;
+    }
+    
+    // Don't trigger if modifiers are pressed
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    switch(e.key.toLowerCase()) {
+      case 'j':
+        els.scrollArea.scrollBy({ top: 80, behavior: 'auto' });
+        break;
+      case 'k':
+        els.scrollArea.scrollBy({ top: -80, behavior: 'auto' });
+        break;
+      case 'r':
+        els.btnRandom.click();
+        break;
+      case 's':
+        els.btnSearch.click();
+        e.preventDefault();
+        break;
+      case 't':
+        els.btnOpenTopics.click();
+        break;
+      case 'escape':
+        els.modalSearch.classList.remove('active');
+        els.modalSettings.classList.remove('active');
+        els.modalTopics.classList.remove('active');
+        els.modalToc.classList.remove('active');
+        els.modalAnnotate.classList.remove('active');
+        break;
     }
   });
 
