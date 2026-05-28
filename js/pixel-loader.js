@@ -130,7 +130,8 @@ const PixelLoader = (() => {
           
           ctx.globalAlpha = Math.max(0, p.alpha);
           ctx.fillStyle = p.color;
-          ctx.fillRect(p.x, p.y, p.size, p.size);
+          // Subtracted 1 to give a dashed/dot-matrix feel even when shattering
+          ctx.fillRect(p.x, p.y, Math.max(1, p.size - 1), Math.max(1, p.size - 1));
         }
       }
       ctx.globalAlpha = 1;
@@ -182,11 +183,12 @@ const PixelLoader = (() => {
           const char = cardData[r][c];
           if (char !== '0') {
             ctx.fillStyle = (l === 0) ? colorMap[char] : colorMapSide[char];
+            // Subtract 1.5px to create the dashed/interrupted scanline look
             ctx.fillRect(
               curXOffset + (startX + c * pixelSize) * layerScaleX, 
               startY + r * pixelSize, 
-              pixelSize * Math.abs(layerScaleX) + 0.5, 
-              pixelSize + 0.5
+              Math.max(1, pixelSize * Math.abs(layerScaleX) - 1.5), 
+              Math.max(1, pixelSize - 1.5)
             );
           }
         }
