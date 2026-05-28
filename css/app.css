@@ -525,3 +525,60 @@ footer {
   from { opacity: 1; transform: translateY(0); }
   to { opacity: 0; transform: translateY(-10px); }
 }
+
+/* ── Mobile Bottom Action Bar ─────────────────────────────── */
+.mobile-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 8px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg-default);
+  border-top: 1px solid var(--border);
+  z-index: 50;
+}
+
+.mob-btn {
+  flex: 1;
+  padding: 12px 8px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--dur-fast);
+  text-align: center;
+}
+
+.mob-btn:active {
+  background: var(--border);
+  color: var(--accent);
+}
+
+/* Primary action button stands out */
+#mob-next {
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Desktop: always hide */
+@media (min-width: 601px) {
+  .mobile-actions { display: none !important; }
+}
+
+/* Mobile: adjust footer and toast when action bar is visible */
+@media (max-width: 600px) {
+  footer {
+    bottom: 48px; /* Push above action bar */
+  }
+  .toast-container {
+    bottom: calc(48px + var(--status-h) + 16px);
+  }
+}
