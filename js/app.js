@@ -62,10 +62,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Initialization ────────────────────────────────────────
   
-  // Load settings
   const savedLang = await DB.getSetting('lang');
   if (savedLang) state.lang = savedLang;
   els.langToggle.textContent = state.lang.toUpperCase();
+  
+  const savedTopics = await DB.getSetting('selectedTopics');
+  if (savedTopics && Array.isArray(savedTopics)) state.selectedTopics = savedTopics;
+  updateTopicLabel();
 
   const ghToken = await DB.getSetting('ghToken');
   const ghGist = await DB.getSetting('ghGist');
@@ -559,6 +562,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         state.selectedTopics.push(val);
       }
     }
+    
+    DB.setSetting('selectedTopics', state.selectedTopics);
     
     refreshTopicGridState();
     updateTopicLabel();
