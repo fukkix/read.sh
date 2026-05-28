@@ -521,9 +521,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   els.btnOpenTopics.addEventListener('click', () => {
     // Generate grid if empty
     if (!els.topicGrid.querySelector('.topic-tag')) {
-      let html = `<div class="topic-tag" data-val="any">[ * ] ANY</div>`;
+      let html = `<button class="topic-tag" data-val="any">[ * ] ANY</button>`;
       for (const [key, config] of Object.entries(Wikipedia.DOMAINS)) {
-        html += `<div class="topic-tag" data-val="${key}">[ ${key.toUpperCase()} ] ${config.name[state.lang]}</div>`;
+        html += `<button class="topic-tag" data-val="${key}">[ ${key.toUpperCase()} ] ${config.name[state.lang]}</button>`;
       }
       els.topicGrid.innerHTML = html;
     }

@@ -295,7 +295,7 @@ footer {
 
 /* ── Modals / Command Palette ─────────────────────────────── */
 .modal-wrapper {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
   z-index: 40;
@@ -375,6 +375,9 @@ footer {
 }
 
 .topic-tag {
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
   padding: 8px;
   border: 1px solid var(--border);
   font-size: 11px;
@@ -383,10 +386,12 @@ footer {
   transition: all var(--dur-fast);
 }
 
-.topic-tag:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--bg-hover);
+@media (hover: hover) {
+  .topic-tag:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--bg-hover);
+  }
 }
 
 .topic-tag.active {
