@@ -396,8 +396,8 @@ footer {
 
 .topic-tag.active {
   border-color: var(--accent);
-  color: var(--accent);
-  background: var(--bg-hover);
+  color: var(--bg-default);
+  background: var(--accent);
 }
 
 /* ── Annotations ──────────────────────────────────────────── */
