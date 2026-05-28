@@ -425,3 +425,22 @@ footer {
 
 /* ── Utilities ────────────────────────────────────────────── */
 .d-none { display: none !important; }
+
+/* ── Shortcut Legend ───────────────────────────────────────── */
+.shortcut-legend {
+  position: fixed;
+  bottom: 8px;
+  right: 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+  font-family: var(--font-mono);
+  z-index: 100;
+  opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+  .shortcut-legend {
+    display: none;
+  }
+}

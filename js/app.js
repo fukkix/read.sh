@@ -45,7 +45,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnEpubNext: document.getElementById('btn-epub-next'),
     modalToc: document.getElementById('modal-toc'),
     tocList: document.getElementById('toc-list'),
-    historyList: document.getElementById('history-list')
+    historyList: document.getElementById('history-list'),
+    shortcutLegend: document.getElementById('shortcut-legend')
   };
 
   let state = {
@@ -70,6 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const savedTopics = await DB.getSetting('selectedTopics');
   if (savedTopics && Array.isArray(savedTopics)) state.selectedTopics = savedTopics;
   updateTopicLabel();
+  updateShortcutLegend();
 
   const ghToken = await DB.getSetting('ghToken');
   const ghGist = await DB.getSetting('ghGist');
@@ -143,6 +145,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       els.btnEpubNext.style.opacity = state.epub.currentIdx < state.epub.book.chapters.length - 1 ? '1' : '0.3';
       els.btnEpubNext.style.pointerEvents = state.epub.currentIdx < state.epub.book.chapters.length - 1 ? 'auto' : 'none';
+    }
+  }
+
+  function updateShortcutLegend() {
+    if (state.lang === 'zh') {
+      els.shortcutLegend.innerHTML = `[j/k] 滚动 &nbsp; [r] 抽卡 &nbsp; [s] 搜索 &nbsp; [t] 分类 &nbsp; [esc] 关闭`;
+    } else {
+      els.shortcutLegend.innerHTML = `[j/k] scroll &nbsp; [r] random &nbsp; [s] search &nbsp; [t] topics &nbsp; [esc] close`;
     }
   }
 
@@ -301,7 +311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  async function loadEpubChapter(idx) {
+  async function loadEpubChapter(idx, resetScroll = false) {
     if (!state.epub.book || idx < 0 || idx >= state.epub.book.chapters.length) return;
     
     setLoader(true, `> loading chapter ${idx + 1}...`);
@@ -317,8 +327,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     els.tabName.textContent = state.epub.book.title + `.epub [${idx+1}/${state.epub.book.chapters.length}]`;
     updateHeaderControls();
     
-    const savedScroll = await DB.getSetting(`epub_scroll_${state.epub.book.title}_${idx}`) || 0;
-    els.scrollArea.scrollTop = savedScroll;
+    if (resetScroll) {
+      els.scrollArea.scrollTop = 0;
+      await DB.setSetting(`epub_scroll_${state.epub.book.title}_${idx}`, 0);
+    } else {
+      const savedScroll = await DB.getSetting(`epub_scroll_${state.epub.book.title}_${idx}`) || 0;
+      els.scrollArea.scrollTop = savedScroll;
+    }
     setLoader(false);
   }
 
@@ -453,8 +468,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.epub.book = null;
   });
 
-  els.btnEpubPrev.addEventListener('click', () => loadEpubChapter(state.epub.currentIdx - 1));
-  els.btnEpubNext.addEventListener('click', () => loadEpubChapter(state.epub.currentIdx + 1));
+  els.btnEpubPrev.addEventListener('click', () => loadEpubChapter(state.epub.currentIdx - 1, true));
+  els.btnEpubNext.addEventListener('click', () => loadEpubChapter(state.epub.currentIdx + 1, true));
   
   els.btnToc.addEventListener('click', () => {
     let html = '';
@@ -502,7 +517,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (item.dataset.epubIdx !== undefined) {
       const idx = parseInt(item.dataset.epubIdx, 10);
       els.modalToc.classList.remove('active');
-      loadEpubChapter(idx);
+      loadEpubChapter(idx, true);
     } else if (item.dataset.lineIdx !== undefined) {
       const idx = parseInt(item.dataset.lineIdx, 10);
       els.modalToc.classList.remove('active');
@@ -546,6 +561,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           await DB.setSetting('lang', state.lang);
           els.topicGrid.innerHTML = '';
           updateTopicLabel();
+          updateShortcutLegend();
           DB.addHistory({ 
             title: translatedTitle, 
             lang: newLang, 
@@ -707,6 +723,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             state.mode = 'wiki';
             state.lang = entry.lang;
             els.langToggle.textContent = state.lang.toUpperCase();
+            updateShortcutLegend();
             await renderContent(entry.title, fullRes.extract, entry.source, fullRes.categories, fullRes.thumbnail);
           } catch(err) {
             alert('This history entry lacks offline cache and cannot be fetched right now.');
