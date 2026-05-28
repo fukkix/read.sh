@@ -534,38 +534,60 @@ footer {
   right: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding: 6px 8px;
-  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-  background: var(--bg-default);
+  gap: 1px;
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--bg-canvas);
   border-top: 1px solid var(--border);
   z-index: 50;
+  height: 32px;
 }
 
 .mob-btn {
-  flex: 1;
-  padding: 12px 8px;
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 11px;
   cursor: pointer;
   transition: all var(--dur-fast);
   text-align: center;
+  height: 100%;
+}
+
+.mob-btn:last-child {
+  border-right: none;
 }
 
 .mob-btn:active {
-  background: var(--border);
+  background: var(--bg-hover);
   color: var(--accent);
 }
 
-/* Primary action button stands out */
 #mob-next {
   color: var(--accent);
-  border-color: var(--accent);
   font-weight: 600;
+}
+
+.mob-progress {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  overflow: hidden;
+  gap: 6px;
+}
+
+.mob-progress-bar {
+  letter-spacing: -1px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 /* Desktop: always hide */
@@ -573,12 +595,9 @@ footer {
   .mobile-actions { display: none !important; }
 }
 
-/* Mobile: adjust footer and toast when action bar is visible */
+/* Mobile: make room for the fixed action bar */
 @media (max-width: 600px) {
-  footer {
-    bottom: 48px; /* Push above action bar */
-  }
-  .toast-container {
-    bottom: calc(48px + var(--status-h) + 16px);
+  .app-wrapper {
+    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   }
 }

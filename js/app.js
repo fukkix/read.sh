@@ -320,6 +320,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       els.progressText.textContent = `${p}%`;
       els.progressBar.textContent = bar;
 
+      // Mirror to mobile action bar
+      const mobPT = document.getElementById('mob-progress-text');
+      const mobPB = document.getElementById('mob-progress-bar');
+      if (mobPT) mobPT.textContent = `${p}%`;
+      if (mobPB) mobPB.textContent = bar;
+
       if (state.mode === 'epub' && state.epub.book) {
         DB.setSetting(`epub_scroll_${state.epub.book.title}_${state.epub.currentIdx}`, st);
       }
@@ -1003,17 +1009,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     mobPrev.classList.add('d-none');
     
     if (state.mode === 'wiki') {
-      mobNext.textContent = '▸ NEXT';
+      mobNext.textContent = '▸';
     } else if (state.mode === 'epub' && state.epub.book) {
       mobPrev.classList.remove('d-none');
-      mobNext.textContent = '▸ NEXT';
+      mobNext.textContent = '▸';
       
       mobPrev.style.opacity = state.epub.currentIdx > 0 ? '1' : '0.3';
       mobPrev.style.pointerEvents = state.epub.currentIdx > 0 ? 'auto' : 'none';
       mobNext.style.opacity = state.epub.currentIdx < state.epub.book.chapters.length - 1 ? '1' : '0.3';
       mobNext.style.pointerEvents = state.epub.currentIdx < state.epub.book.chapters.length - 1 ? 'auto' : 'none';
     } else if (state.mode === 'local') {
-      mobNext.textContent = '▸ NEXT';
+      mobNext.textContent = '▸';
     }
   }
 
