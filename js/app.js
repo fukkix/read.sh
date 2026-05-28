@@ -139,13 +139,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.lines = [];
     
     // Generate JSDoc header
-    const words = textContent.trim().split(/\s+/).length;
+    let words = 0;
+    if (state.lang === 'zh') {
+      words = textContent.replace(/\s/g, '').length;
+    } else {
+      words = textContent.trim().split(/\s+/).filter(w => w.length > 0).length;
+    }
     const header = [
       `/**`,
       ` * @entry   ${title}`,
       ` * @source  ${sourceInfo}`,
       ` * @tags    ${categories.length > 0 ? categories.join(', ') : 'none'}`,
-      ` * @length  ~${words} words`,
+      ` * @length  ~${words} ${state.lang === 'zh' ? 'chars' : 'words'}`,
       ` */`,
       ``,
       `// ` + '─'.repeat(40),
