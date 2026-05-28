@@ -127,14 +127,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (displayP < 0) displayP = 0;
 
         let filled = Math.floor(displayP / 5);
-        let bar = '▓'.repeat(filled) + '░'.repeat(20 - filled);
-        els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--accent)">[${bar}] ${Math.floor(displayP)}%</span>`;
+        let bar = '▰'.repeat(filled) + '▱'.repeat(20 - filled);
+        els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--syn-num)">[${bar}] ${Math.floor(displayP)}%</span>`;
       }, 50);
     } else {
       clearInterval(loaderInterval);
       // Flash 100% DONE
-      let bar = '▓'.repeat(20);
-      els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--accent)">[${bar}] 100%</span><br><span style="color:var(--text-primary)">DONE</span>`;
+      let bar = '▰'.repeat(20);
+      els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--syn-num)">[${bar}] 100%</span><br><span style="color:var(--text-primary)">DONE</span>`;
       setTimeout(() => {
         els.loader.classList.remove('active');
       }, 150);
