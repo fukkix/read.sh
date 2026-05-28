@@ -137,7 +137,7 @@ main {
 .syn-str { color: var(--syn-str); }
 .syn-num { color: var(--syn-num); }
 .syn-name { color: var(--syn-name); }
-.syn-kw { color: var(--syn-kw); font-weight: 600; }
+.syn-kw { color: var(--syn-kw); }
 .syn-comment { color: var(--syn-comment); font-style: italic; }
 .syn-muted { color: var(--syn-muted); }
 
