@@ -30,12 +30,18 @@ const PixelLoader = (() => {
   ];
   
   const colorMap = {
-    '1': '#666666', // Border
-    '2': '#333333', // Body
-    '3': '#cccccc'  // Label
+    '1': '#00ff00', // Border
+    '2': '#111111', // Body
+    '3': '#00ff00'  // Label
   };
   
-  const pixelSize = 8;
+  const colorMapSide = {
+    '1': '#00aa00',
+    '2': '#050505',
+    '3': '#00aa00'
+  };
+  
+  const pixelSize = 6;
   const cardWidth = cardData[0].length * pixelSize;
   const cardHeight = cardData.length * pixelSize;
 
@@ -49,10 +55,8 @@ const PixelLoader = (() => {
 
   function resize() {
     if (!canvas) return;
-    // Adjust size slightly smaller than viewport to ensure it fits mobile
     canvas.width = window.innerWidth;
-    // We want the loader to be mostly in the upper half to leave room for the ASCII text
-    canvas.height = window.innerHeight * 0.6; 
+    canvas.height = window.innerHeight; 
   }
 
   function start() {
@@ -78,9 +82,8 @@ const PixelLoader = (() => {
     particles = [];
     const scaleX = Math.cos(angle);
     const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
+    const cy = canvas.height / 2 - 60; // Shifted up
     
-    // Starting offset for drawing card centered
     const startX = cx - (cardWidth * scaleX) / 2;
     const startY = cy - cardHeight / 2;
     
@@ -88,11 +91,9 @@ const PixelLoader = (() => {
       for (let c = 0; c < cardData[r].length; c++) {
         const char = cardData[r][c];
         if (char !== '0') {
-          // Pixel's position on screen before shatter
           const px = startX + c * pixelSize * scaleX;
           const py = startY + r * pixelSize;
           
-          // Random velocity radiating outward, somewhat chaotic
           const vx = (Math.random() - 0.5) * 15;
           const vy = (Math.random() - 1.0) * 15;
           
@@ -103,13 +104,12 @@ const PixelLoader = (() => {
             vy: vy,
             color: colorMap[char],
             alpha: 1,
-            size: pixelSize * (0.8 + Math.random() * 0.4) // slightly randomize piece sizes
+            size: pixelSize * (0.8 + Math.random() * 0.4)
           });
         }
       }
     }
     
-    // Continue loop until shattered
     let shatterTime = performance.now();
     
     function shatterLoop(time) {
@@ -124,9 +124,9 @@ const PixelLoader = (() => {
           allFaded = false;
           p.x += p.vx;
           p.y += p.vy;
-          p.vy += 0.5; // gravity
-          p.vx *= 0.95; // friction
-          p.alpha -= 0.02; // fade out
+          p.vy += 0.5;
+          p.vx *= 0.95;
+          p.alpha -= 0.02;
           
           ctx.globalAlpha = Math.max(0, p.alpha);
           ctx.fillStyle = p.color;
@@ -152,28 +152,43 @@ const PixelLoader = (() => {
     
     const dt = (time - lastTime) / 1000;
     lastTime = time;
-    angle += dt * 3; // spin speed
+    angle += dt * 3;
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
+    const cy = canvas.height / 2 - 60; // Shift up
     const scaleX = Math.cos(angle);
     
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.scale(scaleX, 1);
-    
-    // Draw centered card
     const startX = -cardWidth / 2;
     const startY = -cardHeight / 2;
     
-    for (let r = 0; r < cardData.length; r++) {
-      for (let c = 0; c < cardData[r].length; c++) {
-        const char = cardData[r][c];
-        if (char !== '0') {
-          ctx.fillStyle = colorMap[char];
-          ctx.fillRect(startX + c * pixelSize, startY + r * pixelSize, pixelSize, pixelSize);
+    const depth = 6;
+    const isFrontVisible = scaleX >= 0;
+    const startLayer = isFrontVisible ? depth : 0;
+    const endLayer = isFrontVisible ? -1 : depth + 1;
+    const step = isFrontVisible ? -1 : 1;
+    const xShiftPerLayer = Math.sin(angle) * 1.5;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    
+    for (let l = startLayer; l !== endLayer; l += step) {
+      const layerScaleX = scaleX;
+      const curXOffset = l * xShiftPerLayer;
+      
+      for (let r = 0; r < cardData.length; r++) {
+        for (let c = 0; c < cardData[r].length; c++) {
+          const char = cardData[r][c];
+          if (char !== '0') {
+            ctx.fillStyle = (l === 0) ? colorMap[char] : colorMapSide[char];
+            ctx.fillRect(
+              curXOffset + (startX + c * pixelSize) * layerScaleX, 
+              startY + r * pixelSize, 
+              pixelSize * Math.abs(layerScaleX) + 0.5, 
+              pixelSize + 0.5
+            );
+          }
         }
       }
     }
