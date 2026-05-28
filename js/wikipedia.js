@@ -193,7 +193,21 @@ const Wikipedia = (() => {
     const slug = encodeURIComponent(title.replace(/\s+/g, '_'));
     const variant = lang === 'zh' ? '&variant=zh-cn' : '';
     const url = `${api(lang)}?action=query&titles=${slug}&prop=extracts|categories|pageimages&piprop=thumbnail&pithumbsize=300&clshow=!hidden&cllimit=20&explaintext=true&exsectionformat=wiki&format=json&origin=*${variant}`;
-    const res = await fetch(url);
+    
+    let fetchTitlePromise = null;
+    if (lang === 'zh') {
+      const headers = { 'Accept': 'application/json', 'Accept-Language': 'zh-cn' };
+      fetchTitlePromise = fetch(`${base(lang)}/page/summary/${slug}`, { headers })
+        .then(r => r.json())
+        .then(d => d.title || title)
+        .catch(() => title);
+    }
+    
+    const [res, displayTitle] = await Promise.all([
+      fetch(url),
+      fetchTitlePromise || Promise.resolve(title)
+    ]);
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const pages = data.query?.pages;
@@ -215,7 +229,7 @@ const Wikipedia = (() => {
     }
     
     const thumbnail = page.thumbnail ? page.thumbnail.source : null;
-    return { extract: page.extract || '', categories, thumbnail };
+    return { extract: page.extract || '', categories, thumbnail, displayTitle };
   }
   
   async function generateAsciiArt(imgUrl, width = 60) {
