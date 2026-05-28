@@ -74,7 +74,7 @@ const Highlighter = (() => {
     let toks = tokenize(esc);
 
     // Quoted strings (ASCII and curly)
-    toks = applyPat(toks, /"[^"]{1,120}"|'[^']{1,80}'|\u201c[^\u201d]{1,120}\u201d/, 'syn-str');
+    toks = applyPat(toks, /"[^"]{1,400}"|'[^']{1,400}'|“[^”]{1,400}”/, 'syn-str');
     // Years (1000–2099)
     toks = applyPat(toks, /\b(1[0-9]{3}|20[0-9]{2})\b/, 'syn-num');
     // Other numbers (integers, decimals, percentages)
@@ -107,8 +107,8 @@ const Highlighter = (() => {
 
     // Book/title brackets 《》
     toks = applyPat(toks, /《[^》]{1,30}》/, 'syn-str');
-    // Quotes 「」or ""
-    toks = applyPat(toks, /「[^」]{1,80}」|\u201c[^\u201d]{1,80}\u201d/, 'syn-str');
+    // Quotes 「」or "" or “”
+    toks = applyPat(toks, /「[^」]{1,400}」|“[^”]{1,400}”|"[^"]{1,400}"/, 'syn-str');
     // Numbers with optional CJK units
     toks = applyPat(toks, /\d+(?:\.\d+)?(?:\s*(?:年|月|日|世纪|%|亿|万|千|百))?/, 'syn-num');
     // Parentheticals （）
