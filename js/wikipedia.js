@@ -129,22 +129,6 @@ const Wikipedia = (() => {
     } else {
       const historyForDomain = history.filter(h => h.domain === domain);
       
-      // 50% chance to do Wiki-Walk if we have history
-      if (historyForDomain.length > 0 && Math.random() < 0.5) {
-        const randomHist = historyForDomain[Math.floor(Math.random() * historyForDomain.length)];
-        const links = await fetchLinks(randomHist.title, lang);
-        const unreadLinks = links.filter(link => !readTitles.has(link.title));
-        
-        if (unreadLinks.length > 0) {
-          const randomLink = unreadLinks[Math.floor(Math.random() * unreadLinks.length)];
-          try {
-            return await fetchSummary(randomLink.title, lang);
-          } catch (e) {
-            // fallback if summary fetch fails
-          }
-        }
-      }
-      
       // Seed Strategy or Fallback
       const keywords = DOMAINS[domain][lang];
       for (let i = 0; i < 3; i++) {
