@@ -30,15 +30,15 @@ const PixelLoader = (() => {
   ];
   
   const colorMap = {
-    '1': '#00ff00', // Border
+    '1': '#528B9C', // Border
     '2': '#111111', // Body
-    '3': '#00ff00'  // Label
+    '3': '#528B9C'  // Label
   };
   
   const colorMapSide = {
-    '1': '#00aa00',
+    '1': '#3c6673',
     '2': '#050505',
-    '3': '#00aa00'
+    '3': '#3c6673'
   };
   
   const pixelSize = 6;
@@ -82,7 +82,7 @@ const PixelLoader = (() => {
     particles = [];
     const scaleX = Math.cos(angle);
     const cx = canvas.width / 2;
-    const cy = canvas.height / 2 - 60; // Shifted up
+    const cy = canvas.height / 2; 
     
     const startX = cx - (cardWidth * scaleX) / 2;
     const startY = cy - cardHeight / 2;
@@ -157,13 +157,13 @@ const PixelLoader = (() => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     const cx = canvas.width / 2;
-    const cy = canvas.height / 2 - 60; // Shift up
+    const cy = canvas.height / 2; 
     const scaleX = Math.cos(angle);
     
     const startX = -cardWidth / 2;
     const startY = -cardHeight / 2;
     
-    const depth = 6;
+    const depth = 3;
     const isFrontVisible = scaleX >= 0;
     const startLayer = isFrontVisible ? depth : 0;
     const endLayer = isFrontVisible ? -1 : depth + 1;
