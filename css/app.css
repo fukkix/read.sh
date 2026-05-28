@@ -192,7 +192,7 @@ footer {
 .logo-ascii {
   color: var(--accent);
   font-weight: 700;
-  font-size: clamp(10px, 2.8vw, 16px);
+  font-size: clamp(5px, 1.4vw, 16px);
   line-height: 1.1;
   margin-bottom: 24px;
   text-shadow: 0 0 10px var(--accent-glow);
