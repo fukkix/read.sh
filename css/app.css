@@ -429,7 +429,7 @@ footer {
 /* ── Shortcut Legend ───────────────────────────────────────── */
 .shortcut-legend {
   position: fixed;
-  bottom: 8px;
+  bottom: calc(var(--status-h) + 8px);
   right: 16px;
   font-size: 11px;
   color: var(--text-muted);
