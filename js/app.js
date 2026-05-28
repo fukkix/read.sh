@@ -107,17 +107,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (active) {
       els.loader.classList.add('active');
       let p = 0;
+      let maxP = 85 + Math.random() * 14; // random max between 85 and 99
+      let velocity = Math.random() * 10 + 5; // Initial speed
       clearInterval(loaderInterval);
       loaderInterval = setInterval(() => {
-        p += Math.random() * 8 + 2;
-        if (p > 95) p = 95;
-        let filled = Math.floor(p / 5);
+        p += velocity;
+        velocity *= 0.85; // Slow down over time (friction)
+        
+        // Random bursts
+        if (Math.random() < 0.1) {
+          velocity += Math.random() * 5;
+        }
+
+        if (p > maxP) p = maxP; // Cap at a random max until finished
+        
+        // Add random slight jitters to make it look like actual processing
+        let displayP = p + (Math.random() * 2 - 1);
+        if (displayP > 99) displayP = 99;
+        if (displayP < 0) displayP = 0;
+
+        let filled = Math.floor(displayP / 5);
         let bar = '▓'.repeat(filled) + '░'.repeat(20 - filled);
-        els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--accent)">[${bar}] ${Math.floor(p)}%</span>`;
+        els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--accent)">[${bar}] ${Math.floor(displayP)}%</span>`;
       }, 50);
     } else {
-      els.loader.classList.remove('active');
       clearInterval(loaderInterval);
+      // Flash 100% DONE
+      let bar = '▓'.repeat(20);
+      els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--accent)">[${bar}] 100%</span><br><span style="color:var(--text-primary)">DONE</span>`;
+      setTimeout(() => {
+        els.loader.classList.remove('active');
+      }, 150);
     }
   }
 
