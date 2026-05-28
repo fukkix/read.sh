@@ -605,6 +605,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await DB.setSetting('lang', state.lang);
       els.topicGrid.innerHTML = ''; // Force re-render of topics modal
       updateTopicLabel();
+      updateShortcutLegend();
     }
   });
 
