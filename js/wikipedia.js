@@ -192,7 +192,7 @@ const Wikipedia = (() => {
   async function fetchFull(title, lang = 'en') {
     const slug = encodeURIComponent(title.replace(/\s+/g, '_'));
     const variant = lang === 'zh' ? '&variant=zh-cn' : '';
-    const url = `${api(lang)}?action=query&titles=${slug}&prop=extracts|categories|pageimages&piprop=thumbnail&pithumbsize=300&clshow=!hidden&cllimit=20&explaintext=true&exsectionformat=plain&format=json&origin=*${variant}`;
+    const url = `${api(lang)}?action=query&titles=${slug}&prop=extracts|categories|pageimages&piprop=thumbnail&pithumbsize=300&clshow=!hidden&cllimit=20&explaintext=true&exsectionformat=wiki&format=json&origin=*${variant}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
