@@ -1,6 +1,6 @@
 {
-  "name": "FIREADER",
-  "short_name": "FIREADER",
+  "name": "READ.SH",
+  "short_name": "READ.SH",
   "description": "像读代码一样探索知识 — Geek 风格百科阅读器",
   "start_url": "./",
   "display": "standalone",
