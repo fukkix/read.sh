@@ -192,7 +192,7 @@ const Wikipedia = (() => {
   async function fetchFull(title, lang = 'en') {
     const slug = encodeURIComponent(title.replace(/\s+/g, '_'));
     const variant = lang === 'zh' ? '&variant=zh-cn' : '';
-    const url = `${api(lang)}?action=query&titles=${slug}&prop=extracts|categories&clshow=!hidden&cllimit=20&explaintext=true&exsectionformat=plain&format=json&origin=*${variant}`;
+    const url = `${api(lang)}?action=query&titles=${slug}&prop=extracts|categories|pageimages&piprop=thumbnail&pithumbsize=300&clshow=!hidden&cllimit=20&explaintext=true&exsectionformat=plain&format=json&origin=*${variant}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -214,7 +214,44 @@ const Wikipedia = (() => {
       });
     }
     
-    return { extract: page.extract || '', categories };
+    const thumbnail = page.thumbnail ? page.thumbnail.source : null;
+    return { extract: page.extract || '', categories, thumbnail };
+  }
+  
+  async function generateAsciiArt(imgUrl, width = 60) {
+    if (!imgUrl) return null;
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const scale = width / img.width;
+        // height needs to be scaled by ~0.5 because monospace chars are roughly 2x taller than wide
+        const height = Math.floor(img.height * scale * 0.5); 
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        const chars = '@%#*+=-:. '; // density string, @ is darkest, space is lightest
+        let ascii = '';
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i+1];
+          const b = data[i+2];
+          const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          const charIdx = Math.floor((luma / 255) * (chars.length - 1));
+          ascii += chars[charIdx];
+          if (((i/4) + 1) % width === 0) ascii += '\n';
+        }
+        resolve(ascii);
+      };
+      img.onerror = () => resolve(null);
+      img.src = imgUrl;
+    });
   }
 
   async function fetchTranslation(title, fromLang, toLang) {
@@ -249,5 +286,5 @@ const Wikipedia = (() => {
     }));
   }
 
-  return { fetchRandom, fetchSummary, fetchFull, fetchTranslation, search, DOMAINS };
+  return { DOMAINS, fetchRandom, search, fetchFull, fetchTranslation, generateAsciiArt };
 })();

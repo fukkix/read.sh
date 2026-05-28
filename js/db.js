@@ -85,6 +85,8 @@ const DB = (() => {
         lang: entry.lang || 'en',
         source: entry.source || 'Wikipedia',
         domain: entry.domain || 'any',
+        extract: entry.extract || '',
+        categories: entry.categories || [],
         timestamp: Date.now()
       });
       transaction.oncomplete = resolve;

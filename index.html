@@ -33,7 +33,7 @@
       </div>
       
       <div class="header-actions">
-        <button id="btn-epub-toc" class="btn-icon d-none" title="Table of Contents">[ ≡ ] TOC</button>
+        <button id="btn-toc" class="btn-icon d-none" title="Table of Contents">[ TOC ]</button>
         <button id="btn-epub-prev" class="btn-icon d-none" title="Prev Chapter">[ &lt; ]</button>
         <button id="btn-epub-next" class="btn-icon d-none" title="Next Chapter">[ &gt; ]</button>
         <button id="btn-home" class="btn-icon d-none" title="Home">[ HOME ]</button>
@@ -129,8 +129,7 @@
 
   <!-- Loading Overlay -->
   <div id="loader" class="loader-overlay">
-    <div class="spinner"></div>
-    <div id="loader-text" class="syn-num">> loading...</div>
+    <div id="loader-text" class="syn-num" style="text-align: center; line-height: 1.5;">> loading...</div>
   </div>
 
   <!-- Search Modal -->
@@ -157,6 +156,10 @@
       <input type="text" id="setting-gist" class="cmd-input" placeholder="> Gist ID (leave empty to create)...">
       <div style="padding: 16px; text-align: right;">
         <button id="btn-save-settings" class="cmd-btn" style="display: inline-block;">[ SAVE & CLOSE ]</button>
+      </div>
+      <div class="cmd-title" style="padding: 16px 16px 0; border-top: 1px solid var(--border);">// LOCAL HISTORY (OFFLINE)</div>
+      <div id="history-list" class="cmd-results" style="max-height: 250px; overflow-y: auto;">
+        <!-- Injected via JS -->
       </div>
     </div>
   </div>
