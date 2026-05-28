@@ -217,8 +217,8 @@ footer {
   justify-content: space-between;
   padding: 0 16px;
   pointer-events: none;
-  color: var(--text-muted);
-  opacity: 0.3; /* Subtle background presence */
+  color: var(--border);
+  opacity: 1; /* Match the border color directly */
   box-sizing: border-box;
   z-index: 1;
 }
