@@ -985,4 +985,95 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // ── Mobile Bottom Action Bar ──────────────────────────────
+  const mobActions = document.getElementById('mobile-actions');
+  const mobHome = document.getElementById('mob-home');
+  const mobPrev = document.getElementById('mob-prev');
+  const mobNext = document.getElementById('mob-next');
+  const mobToc = document.getElementById('mob-toc');
+
+  function updateMobileActions() {
+    const isMobile = window.innerWidth <= 600;
+    if (!isMobile || state.mode === 'none') {
+      mobActions.classList.add('d-none');
+      return;
+    }
+    
+    mobActions.classList.remove('d-none');
+    mobPrev.classList.add('d-none');
+    
+    if (state.mode === 'wiki') {
+      mobNext.textContent = '▸ NEXT';
+    } else if (state.mode === 'epub' && state.epub.book) {
+      mobPrev.classList.remove('d-none');
+      mobNext.textContent = '▸ NEXT';
+      
+      mobPrev.style.opacity = state.epub.currentIdx > 0 ? '1' : '0.3';
+      mobPrev.style.pointerEvents = state.epub.currentIdx > 0 ? 'auto' : 'none';
+      mobNext.style.opacity = state.epub.currentIdx < state.epub.book.chapters.length - 1 ? '1' : '0.3';
+      mobNext.style.pointerEvents = state.epub.currentIdx < state.epub.book.chapters.length - 1 ? 'auto' : 'none';
+    } else if (state.mode === 'local') {
+      mobNext.textContent = '▸ NEXT';
+    }
+  }
+
+  // Hook into updateHeaderControls
+  const _origUpdateHeader = updateHeaderControls;
+  updateHeaderControls = function() {
+    _origUpdateHeader();
+    updateMobileActions();
+  };
+
+  mobHome.addEventListener('click', () => els.btnHome.click());
+  mobNext.addEventListener('click', () => {
+    if (state.mode === 'wiki') {
+      loadRandomWiki();
+    } else if (state.mode === 'epub' && state.epub.book) {
+      loadEpubChapter(state.epub.currentIdx + 1, true);
+    } else if (state.mode === 'local') {
+      els.btnNext.click();
+    }
+  });
+  mobPrev.addEventListener('click', () => {
+    if (state.mode === 'epub' && state.epub.book) {
+      loadEpubChapter(state.epub.currentIdx - 1, true);
+    }
+  });
+  mobToc.addEventListener('click', () => els.btnToc.click());
+
+  window.addEventListener('resize', updateMobileActions);
+
+  // ── Swipe Gestures for Mobile ─────────────────────────────
+  let touchStartX = 0;
+  let touchStartY = 0;
+
+  els.scrollArea.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  els.scrollArea.addEventListener('touchend', (e) => {
+    if (state.mode === 'none') return;
+    
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    
+    // Only trigger if horizontal swipe is dominant and long enough
+    if (Math.abs(dx) < 80 || Math.abs(dy) > Math.abs(dx) * 0.7) return;
+    
+    if (dx < 0) {
+      // Swipe left → Next
+      if (state.mode === 'wiki') {
+        loadRandomWiki();
+      } else if (state.mode === 'epub' && state.epub.book && state.epub.currentIdx < state.epub.book.chapters.length - 1) {
+        loadEpubChapter(state.epub.currentIdx + 1, true);
+      }
+    } else {
+      // Swipe right → Previous (epub) or Home
+      if (state.mode === 'epub' && state.epub.book && state.epub.currentIdx > 0) {
+        loadEpubChapter(state.epub.currentIdx - 1, true);
+      }
+    }
+  }, { passive: true });
+
 });
