@@ -326,6 +326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setLoader(true, `> fetching extract: ${entry.title}...`);
       const fullRes = await Wikipedia.fetchFull(entry.title, state.lang);
       
+      entry.title = fullRes.displayTitle || entry.title;
       await renderContent(entry.title, fullRes.extract, entry.source, fullRes.categories, fullRes.thumbnail);
       
       // Save history with domain and offline content
@@ -585,7 +586,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const translatedTitle = await Wikipedia.fetchTranslation(state.title, oldLang, newLang);
         if (translatedTitle) {
           const fullRes = await Wikipedia.fetchFull(translatedTitle, newLang);
-          await renderContent(translatedTitle, fullRes.extract, `Wikipedia ${newLang.toUpperCase()}`, fullRes.categories, fullRes.thumbnail);
+          const finalTitle = fullRes.displayTitle || translatedTitle;
+          await renderContent(finalTitle, fullRes.extract, `Wikipedia ${newLang.toUpperCase()}`, fullRes.categories, fullRes.thumbnail);
           
           // Switch state successfully
           state.lang = newLang;
@@ -757,7 +759,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             state.lang = entry.lang;
             els.langToggle.textContent = state.lang.toUpperCase();
             updateShortcutLegend();
-            await renderContent(entry.title, fullRes.extract, entry.source, fullRes.categories, fullRes.thumbnail);
+            await renderContent(fullRes.displayTitle || entry.title, fullRes.extract, entry.source, fullRes.categories, fullRes.thumbnail);
           } catch(err) {
             showToast('This history entry lacks offline cache and cannot be fetched right now.');
           } finally {
@@ -901,9 +903,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       state.mode = 'wiki';
       setLoader(true, `> fetching extract: ${title}...`);
       const fullRes = await Wikipedia.fetchFull(title, state.lang);
-      await renderContent(title, fullRes.extract, `Wikipedia ${state.lang.toUpperCase()}`, fullRes.categories, fullRes.thumbnail);
+      const finalTitle = fullRes.displayTitle || title;
+      await renderContent(finalTitle, fullRes.extract, `Wikipedia ${state.lang.toUpperCase()}`, fullRes.categories, fullRes.thumbnail);
       DB.addHistory({ 
-        title, 
+        title: finalTitle, 
         lang: state.lang, 
         source: `Wikipedia ${state.lang.toUpperCase()}`,
         extract: fullRes.extract,
