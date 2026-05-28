@@ -165,8 +165,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     els.btnEpubPrev.classList.add('d-none');
     els.btnEpubNext.classList.add('d-none');
 
+    const footerEl = document.querySelector('footer');
+
     if (state.mode !== 'none') {
       els.btnHome.classList.remove('d-none');
+      if (footerEl) footerEl.classList.remove('d-none');
+    } else {
+      if (footerEl) footerEl.classList.add('d-none');
     }
     
     if (state.mode === 'wiki') {
