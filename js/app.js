@@ -67,7 +67,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   const savedLang = await DB.getSetting('lang');
   if (savedLang) state.lang = savedLang;
-  els.langToggle.textContent = state.lang.toUpperCase();
+  function updateLangToggle() {
+    els.langToggle.textContent = state.lang === 'zh' ? 'EN' : 'CN';
+  }
+
+  updateLangToggle();
   
   const savedTopics = await DB.getSetting('selectedTopics');
   if (savedTopics && Array.isArray(savedTopics)) state.selectedTopics = savedTopics;
@@ -591,7 +595,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           
           // Switch state successfully
           state.lang = newLang;
-          els.langToggle.textContent = state.lang.toUpperCase();
+          updateLangToggle();
           await DB.setSetting('lang', state.lang);
           els.topicGrid.innerHTML = '';
           updateTopicLabel();
@@ -615,7 +619,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       // Just switch language for UI
       state.lang = newLang;
-      els.langToggle.textContent = state.lang.toUpperCase();
+      updateLangToggle();
       await DB.setSetting('lang', state.lang);
       els.topicGrid.innerHTML = ''; // Force re-render of topics modal
       updateTopicLabel();
@@ -748,7 +752,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (entry.extract) {
           state.mode = 'wiki';
           state.lang = entry.lang;
-          els.langToggle.textContent = state.lang.toUpperCase();
+          updateLangToggle();
           await renderContent(entry.title, entry.extract, `[OFFLINE] ${entry.source}`, entry.categories);
         } else {
           // Fallback to fetch from live if offline content missing
@@ -757,7 +761,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const fullRes = await Wikipedia.fetchFull(entry.title, entry.lang);
             state.mode = 'wiki';
             state.lang = entry.lang;
-            els.langToggle.textContent = state.lang.toUpperCase();
+            updateLangToggle();
             updateShortcutLegend();
             await renderContent(fullRes.displayTitle || entry.title, fullRes.extract, entry.source, fullRes.categories, fullRes.thumbnail);
           } catch(err) {
