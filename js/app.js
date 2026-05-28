@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (savedTopics && Array.isArray(savedTopics)) state.selectedTopics = savedTopics;
   updateTopicLabel();
   updateShortcutLegend();
+  if (typeof PixelLoader !== 'undefined') PixelLoader.init('pixel-loader-canvas');
 
   const ghToken = await DB.getSetting('ghToken');
   const ghGist = await DB.getSetting('ghGist');
@@ -111,6 +112,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   function setLoader(active, text = 'Loading...') {
     if (active) {
       els.loader.classList.add('active');
+      if (typeof PixelLoader !== 'undefined') PixelLoader.start();
+      
       let p = 0;
       let maxP = 85 + Math.random() * 14; // random max between 85 and 99
       let velocity = Math.random() * 10 + 5; // Initial speed
@@ -140,9 +143,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Flash 100% DONE
       let bar = '▰'.repeat(20);
       els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--syn-num)">[${bar}] 100%</span><br><span style="color:var(--text-primary)">DONE</span>`;
-      setTimeout(() => {
-        els.loader.classList.remove('active');
-      }, 150);
+      
+      if (typeof PixelLoader !== 'undefined') {
+        els.loaderText.style.display = 'none'; // hide text during shatter
+        PixelLoader.shatter(() => {
+          els.loader.classList.remove('active');
+          els.loaderText.style.display = 'block'; // restore
+        });
+      } else {
+        setTimeout(() => {
+          els.loader.classList.remove('active');
+        }, 150);
+      }
     }
   }
 

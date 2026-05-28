@@ -20,6 +20,7 @@
   
   <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="js/pixel-loader.js"></script>
 </head>
 <body>
   
@@ -48,7 +49,13 @@
       
       <!-- Splash / Home Screen -->
       <div id="splash">
-        <div class="logo-ascii">./read.sh</div>
+        <pre class="logo-ascii">
+    ____  _________    ____  _____ __  __
+   / __ \/ ____/   |  / __ \/ ___// / / /
+  / /_/ / __/ / /| | / / / /\__ \/ /_/ / 
+ / _, _/ /___/ ___ |/ /_/ /___/ / __  /  
+/_/ |_/_____/_/  |_/_____//____/_/ /_/   
+        </pre>
         <div class="splash-menu">
           
           <button class="cmd-btn" id="btn-random">
@@ -129,7 +136,8 @@
 
   <!-- Loading Overlay -->
   <div id="loader" class="loader-overlay">
-    <div id="loader-text" class="syn-num" style="text-align: center; line-height: 1.5;">> loading...</div>
+    <canvas id="pixel-loader-canvas"></canvas>
+    <div id="loader-text" class="syn-num" style="text-align: center; line-height: 1.5; z-index: 2; position: relative;">> loading...</div>
   </div>
 
   <!-- Search Modal -->
