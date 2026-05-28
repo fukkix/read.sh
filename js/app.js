@@ -459,13 +459,40 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   els.langToggle.addEventListener('click', async () => {
-    state.lang = state.lang === 'en' ? 'zh' : 'en';
-    els.langToggle.textContent = state.lang.toUpperCase();
-    await DB.setSetting('lang', state.lang);
-    els.topicGrid.innerHTML = ''; // Force re-render of topics modal
-    updateTopicLabel();
-    if (state.mode === 'wiki') {
-      loadRandomWiki();
+    const oldLang = state.lang;
+    const newLang = oldLang === 'en' ? 'zh' : 'en';
+    
+    if (state.mode === 'wiki' && state.title) {
+      setLoader(true, `> translating to ${newLang.toUpperCase()}...`);
+      try {
+        const translatedTitle = await Wikipedia.fetchTranslation(state.title, oldLang, newLang);
+        if (translatedTitle) {
+          const fullRes = await Wikipedia.fetchFull(translatedTitle, newLang);
+          await renderContent(translatedTitle, fullRes.extract, `Wikipedia ${newLang.toUpperCase()}`, fullRes.categories);
+          
+          // Switch state successfully
+          state.lang = newLang;
+          els.langToggle.textContent = state.lang.toUpperCase();
+          await DB.setSetting('lang', state.lang);
+          els.topicGrid.innerHTML = '';
+          updateTopicLabel();
+          DB.addHistory({ title: translatedTitle, lang: newLang, source: `Wikipedia ${newLang.toUpperCase()}` });
+        } else {
+          alert(`No ${newLang.toUpperCase()} translation found for "${state.title}".`);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Translation request failed.');
+      } finally {
+        setLoader(false);
+      }
+    } else {
+      // Just switch language for UI
+      state.lang = newLang;
+      els.langToggle.textContent = state.lang.toUpperCase();
+      await DB.setSetting('lang', state.lang);
+      els.topicGrid.innerHTML = ''; // Force re-render of topics modal
+      updateTopicLabel();
     }
   });
 
