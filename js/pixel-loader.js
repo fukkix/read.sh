@@ -87,25 +87,32 @@ const PixelLoader = (() => {
     const startX = cx - (cardWidth * scaleX) / 2;
     const startY = cy - cardHeight / 2;
     
+    const subDiv = 2;
+    const subSize = pixelSize / subDiv;
+    
     for (let r = 0; r < cardData.length; r++) {
       for (let c = 0; c < cardData[r].length; c++) {
         const char = cardData[r][c];
         if (char !== '0') {
-          const px = startX + c * pixelSize * scaleX;
-          const py = startY + r * pixelSize;
-          
-          const vx = (Math.random() - 0.5) * 15;
-          const vy = (Math.random() - 1.0) * 15;
-          
-          particles.push({
-            x: px,
-            y: py,
-            vx: vx,
-            vy: vy,
-            color: colorMap[char],
-            alpha: 1,
-            size: pixelSize * (0.8 + Math.random() * 0.4)
-          });
+          for (let sr = 0; sr < subDiv; sr++) {
+            for (let sc = 0; sc < subDiv; sc++) {
+              const px = startX + (c * pixelSize + sc * subSize) * scaleX;
+              const py = startY + r * pixelSize + sr * subSize;
+              
+              const vx = (Math.random() - 0.5) * 15;
+              const vy = (Math.random() - 1.0) * 15;
+              
+              particles.push({
+                x: px,
+                y: py,
+                vx: vx,
+                vy: vy,
+                color: colorMap[char],
+                alpha: 1,
+                size: subSize * (0.8 + Math.random() * 0.4)
+              });
+            }
+          }
         }
       }
     }
@@ -178,18 +185,26 @@ const PixelLoader = (() => {
       const layerScaleX = scaleX;
       const curXOffset = l * xShiftPerLayer;
       
+      const subDiv = 2;
+      const subSize = pixelSize / subDiv;
+      const gap = 1;
+      
       for (let r = 0; r < cardData.length; r++) {
         for (let c = 0; c < cardData[r].length; c++) {
           const char = cardData[r][c];
           if (char !== '0') {
             ctx.fillStyle = (l === 0) ? colorMap[char] : colorMapSide[char];
-            // Subtract 1.5px to create the dashed/interrupted scanline look
-            ctx.fillRect(
-              curXOffset + (startX + c * pixelSize) * layerScaleX, 
-              startY + r * pixelSize, 
-              Math.max(1, pixelSize * Math.abs(layerScaleX) - 1.5), 
-              Math.max(1, pixelSize - 1.5)
-            );
+            
+            for (let sr = 0; sr < subDiv; sr++) {
+              for (let sc = 0; sc < subDiv; sc++) {
+                ctx.fillRect(
+                  curXOffset + (startX + c * pixelSize + sc * subSize) * layerScaleX, 
+                  startY + r * pixelSize + sr * subSize, 
+                  Math.max(0.5, subSize * Math.abs(layerScaleX) - gap), 
+                  Math.max(0.5, subSize - gap)
+                );
+              }
+            }
           }
         }
       }
