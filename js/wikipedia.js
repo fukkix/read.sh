@@ -128,9 +128,30 @@ const Wikipedia = (() => {
       throw new Error('Could not find unread random article');
     } else {
       const historyForDomain = history.filter(h => h.domain === domain);
+      const keywords = DOMAINS[domain][lang];
+      
+      // 50% chance to do Wiki-Walk if we have history
+      if (historyForDomain.length > 0 && Math.random() < 0.5) {
+        const randomHist = historyForDomain[Math.floor(Math.random() * historyForDomain.length)];
+        const links = await fetchLinks(randomHist.title, lang);
+        
+        // Strict domain restriction: only walk to links that contain or are contained by a domain keyword
+        const unreadLinks = links.filter(link => {
+          if (readTitles.has(link.title)) return false;
+          return keywords.some(kw => link.title.includes(kw) || kw.includes(link.title));
+        });
+        
+        if (unreadLinks.length > 0) {
+          const randomLink = unreadLinks[Math.floor(Math.random() * unreadLinks.length)];
+          try {
+            return await fetchSummary(randomLink.title, lang);
+          } catch (e) {
+            // fallback if summary fetch fails
+          }
+        }
+      }
       
       // Seed Strategy or Fallback
-      const keywords = DOMAINS[domain][lang];
       for (let i = 0; i < 3; i++) {
         const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
         const results = await search(randomKeyword, lang);
