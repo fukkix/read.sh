@@ -130,6 +130,8 @@ main {
   word-break: break-word;
   max-width: 800px;
   margin: 0 auto;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* Syntax Classes */
