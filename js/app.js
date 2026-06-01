@@ -1092,7 +1092,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Check for 1999 WIKI unlock command
     const qLower = q.toLowerCase();
-    if (qLower === '1999' || qLower === '/1999' || qLower === ':1999' || qLower === '1999wiki') {
+    const isUnlockCommand = (qLower === '1999' || qLower === '/1999' || qLower === ':1999' || qLower === '1999wiki');
+    
+    if (isUnlockCommand) {
       (async () => {
         if (!state.unlocked1999) {
           state.unlocked1999 = true;
@@ -1102,32 +1104,37 @@ document.addEventListener('DOMContentLoaded', async () => {
           sync1999WikiList();
         }
       })();
-      
-      els.searchResults.innerHTML = `
-        <div class="cmd-item" data-type="unlock-1999" style="border: 1px dashed var(--accent); background: rgba(158, 206, 164, 0.05); cursor: pointer; padding: 12px; margin-bottom: 8px; border-radius: 4px;">
-          <div class="cmd-title" style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">🔓 [${state.lang === 'zh' ? '系统指令' : 'SYSTEM CMD'}] ${state.lang === 'zh' ? '开启 1999 WIKI' : 'Open 1999 WIKI'}</div>
-          <div class="cmd-desc" style="font-size: 0.85em; color: var(--text-muted);">${state.lang === 'zh' ? '点击立即打开 1999 WIKI 目录选择面板' : 'Click to open 1999 WIKI Topics panel'}</div>
-        </div>
-      `;
-      return;
     }
     
     searchTimeout = setTimeout(async () => {
       try {
         els.searchResults.innerHTML = '<div class="cmd-item"><div class="cmd-title">Searching...</div></div>';
-        const results = await Wikipedia.search(q, state.lang);
+        const searchKey = isUnlockCommand ? '1999' : q;
+        const results = await Wikipedia.search(searchKey, state.lang);
+        
+        let customCardHtml = '';
+        if (isUnlockCommand) {
+          customCardHtml = `
+            <div class="cmd-item" data-type="unlock-1999" style="border: 1px dashed var(--accent); background: rgba(158, 206, 164, 0.05); cursor: pointer; padding: 12px; margin-bottom: 8px; border-radius: 4px;">
+              <div class="cmd-title" style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">🔓 [${state.lang === 'zh' ? '系统指令' : 'SYSTEM CMD'}] ${state.lang === 'zh' ? '开启 1999 WIKI' : 'Open 1999 WIKI'}</div>
+              <div class="cmd-desc" style="font-size: 0.85em; color: var(--text-muted);">${state.lang === 'zh' ? '点击立即打开 1999 WIKI 目录选择面板' : 'Click to open 1999 WIKI Topics panel'}</div>
+            </div>
+          `;
+        }
         
         if (results.length === 0) {
-          els.searchResults.innerHTML = '<div class="cmd-item"><div class="cmd-title">No results</div></div>';
+          els.searchResults.innerHTML = customCardHtml ? customCardHtml : '<div class="cmd-item"><div class="cmd-title">No results</div></div>';
           return;
         }
         
-        els.searchResults.innerHTML = results.map(r => `
+        const resultsHtml = results.map(r => `
           <div class="cmd-item" data-title="${r.title}">
             <div class="cmd-title">${r.title}</div>
             <div class="cmd-desc">${r.description || '...'}</div>
           </div>
         `).join('');
+        
+        els.searchResults.innerHTML = customCardHtml + resultsHtml;
       } catch (err) {
         els.searchResults.innerHTML = '<div class="cmd-item"><div class="cmd-title">Search error</div></div>';
       }
