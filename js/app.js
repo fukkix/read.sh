@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnToc: document.getElementById('btn-toc'),
     btnEpubPrev: document.getElementById('btn-epub-prev'),
     btnEpubNext: document.getElementById('btn-epub-next'),
+    btnCopy: document.getElementById('btn-copy'),
     modalToc: document.getElementById('modal-toc'),
     tocList: document.getElementById('toc-list'),
     historyList: document.getElementById('history-list'),
@@ -181,11 +182,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     els.btnToc.classList.add('d-none');
     els.btnEpubPrev.classList.add('d-none');
     els.btnEpubNext.classList.add('d-none');
+    els.btnCopy.classList.add('d-none');
 
     const footerEl = document.querySelector('footer');
 
     if (state.mode !== 'none') {
       els.btnHome.classList.remove('d-none');
+      els.btnCopy.classList.remove('d-none');
       if (footerEl) footerEl.classList.remove('d-none');
     } else {
       if (footerEl) footerEl.classList.add('d-none');
@@ -220,9 +223,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateShortcutLegend() {
     if (state.lang === 'zh') {
-      els.shortcutLegend.innerHTML = `[j/k] 滚动 &nbsp; [r] 抽卡 &nbsp; [s] 搜索 &nbsp; [t] 分类 &nbsp; [esc] 关闭`;
+      els.shortcutLegend.innerHTML = `[j/k] 滚动 &nbsp; [r] 抽卡 &nbsp; [s] 搜索 &nbsp; [t] 分类 &nbsp; [y] 复制 &nbsp; [esc] 关闭`;
     } else {
-      els.shortcutLegend.innerHTML = `[j/k] scroll &nbsp; [r] random &nbsp; [s] search &nbsp; [t] topics &nbsp; [esc] close`;
+      els.shortcutLegend.innerHTML = `[j/k] scroll &nbsp; [r] random &nbsp; [s] search &nbsp; [t] topics &nbsp; [y] copy &nbsp; [esc] close`;
     }
   }
 
@@ -780,6 +783,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   els.btnNext.addEventListener('click', loadRandomWiki);
   
+  function copyCurrentContent() {
+    if (state.mode === 'none' || state.lines.length === 0) {
+      showToast(state.lang === 'zh' ? '当前没有可复制的内容' : 'No content to copy');
+      return;
+    }
+    
+    const fullText = state.lines.join('\n');
+    navigator.clipboard.writeText(fullText).then(() => {
+      showToast(state.lang === 'zh' ? '[SYS:COPY] 内容已复制到剪贴板！' : '[SYS:COPY] Content copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      showToast(state.lang === 'zh' ? '复制失败，请手动选择复制' : 'Copy failed, please select manually');
+    });
+  }
+
   els.btnHome.addEventListener('click', () => {
     els.splash.classList.remove('hidden');
     state.mode = 'none';
@@ -789,6 +807,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     els.gutter.innerHTML = '';
     state.epub.book = null;
   });
+
+  els.btnCopy.addEventListener('click', copyCurrentContent);
 
   els.btnEpubPrev.addEventListener('click', () => loadEpubChapter(state.epub.currentIdx - 1, true));
   els.btnEpubNext.addEventListener('click', () => loadEpubChapter(state.epub.currentIdx + 1, true));
@@ -1293,6 +1313,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         break;
       case 't':
         els.btnOpenTopics.click();
+        break;
+      case 'y':
+        copyCurrentContent();
         break;
       case 'escape':
         els.modalSearch.classList.remove('active');
