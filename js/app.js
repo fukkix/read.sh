@@ -1116,11 +1116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isUnlockCommand) {
           customCardHtml = `
             <div class="cmd-item" data-type="unlock-1999" style="border: 1px dashed var(--accent); background: rgba(158, 206, 164, 0.05); cursor: pointer; padding: 12px; margin-bottom: 8px; border-radius: 4px; display: flex; align-items: center; gap: 16px;">
-              <pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 7px; line-height: 1.1; color: var(--accent); font-weight: bold; user-select: none;">     .---.
-    /     \\\\
-    \\\\__    |
-      |    |
-   .-"-----"-.
+              <pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 8px; line-height: 1.2; color: var(--accent); font-weight: bold; user-select: none;">   .-"-----"-.
    |   (X)   |
    '---------'</pre>
               <div>
