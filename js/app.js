@@ -1100,7 +1100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           state.unlocked1999 = true;
           await DB.setSetting('unlocked1999', true);
           els.topicGrid.innerHTML = ''; // force re-render
-          showToast(state.lang === 'zh' ? '🔓 1999 WIKI 已解锁！' : '🔓 1999 WIKI Unlocked!');
+          showToast(state.lang === 'zh' ? '[SYS:UNLOCKED] 1999 WIKI 已解锁！' : '[SYS:UNLOCKED] 1999 WIKI Unlocked!');
           sync1999WikiList();
         }
       })();
@@ -1115,9 +1115,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         let customCardHtml = '';
         if (isUnlockCommand) {
           customCardHtml = `
-            <div class="cmd-item" data-type="unlock-1999" style="border: 1px dashed var(--accent); background: rgba(158, 206, 164, 0.05); cursor: pointer; padding: 12px; margin-bottom: 8px; border-radius: 4px;">
-              <div class="cmd-title" style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">🔓 [${state.lang === 'zh' ? '系统指令' : 'SYSTEM CMD'}] ${state.lang === 'zh' ? '开启 1999 WIKI' : 'Open 1999 WIKI'}</div>
-              <div class="cmd-desc" style="font-size: 0.85em; color: var(--text-muted);">${state.lang === 'zh' ? '点击立即打开 1999 WIKI 目录选择面板' : 'Click to open 1999 WIKI Topics panel'}</div>
+            <div class="cmd-item" data-type="unlock-1999" style="border: 1px dashed var(--accent); background: rgba(158, 206, 164, 0.05); cursor: pointer; padding: 12px; margin-bottom: 8px; border-radius: 4px; display: flex; align-items: center; gap: 16px;">
+              <pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 7px; line-height: 1.1; color: var(--accent); font-weight: bold; user-select: none;">     .---.
+    /     \\\\
+    \\\\__    |
+      |    |
+   .-"-----"-.
+   |   (X)   |
+   '---------'</pre>
+              <div>
+                <div class="cmd-title" style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">[SYS://UNLOCK_1999] ${state.lang === 'zh' ? '开启 1999 WIKI' : 'Open 1999 WIKI'}</div>
+                <div class="cmd-desc" style="font-size: 0.85em; color: var(--text-muted);">${state.lang === 'zh' ? '点击立即打开 1999 WIKI 目录选择面板' : 'Click to open 1999 WIKI Topics panel'}</div>
+              </div>
             </div>
           `;
         }
