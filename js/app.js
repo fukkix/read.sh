@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentLineNum: null,
     epub: { book: null, currentIdx: 0 },
     selectedTopics: [], // empty = ANY
-    unlocked1999: false
+    unlocked1999: false,
+    wiki1999List: []
   };
 
   // ── Initialization ────────────────────────────────────────
@@ -76,6 +77,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   const savedUnlocked = await DB.getSetting('unlocked1999');
   if (savedUnlocked) state.unlocked1999 = true;
+
+  // Load 1999 WIKI dynamic list if exists, and merge with static list
+  state.wiki1999List = (typeof Wiki1999List !== 'undefined' && Array.isArray(Wiki1999List)) ? [...Wiki1999List] : [];
+  const savedWikiList = await DB.getSetting('wiki1999_dynamic_list');
+  if (Array.isArray(savedWikiList)) {
+    state.wiki1999List = Array.from(new Set([...state.wiki1999List, ...savedWikiList]));
+  }
+
+  // Trigger dynamic background sync if unlocked
+  if (state.unlocked1999) {
+    sync1999WikiList();
+  }
 
   const savedTopics = await DB.getSetting('selectedTopics');
   if (savedTopics && Array.isArray(savedTopics)) state.selectedTopics = savedTopics;
@@ -352,19 +365,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const targetFilename = normWithoutMd.split('/').pop().toLowerCase();
 
     // 1. Exact match (case insensitive)
-    let match = Wiki1999List.find(p => p.toLowerCase() === normWithMd.toLowerCase() || p.toLowerCase() === normWithoutMd.toLowerCase());
+    let match = state.wiki1999List.find(p => p.toLowerCase() === normWithMd.toLowerCase() || p.toLowerCase() === normWithoutMd.toLowerCase());
     if (match) return match;
     
     // 2. Ends with target (e.g. "世界观/暴雨.md" matching "wiki/世界观/暴雨.md")
-    match = Wiki1999List.find(p => p.toLowerCase().endsWith('/' + normWithMd.toLowerCase()) || p.toLowerCase().endsWith('/' + normWithoutMd.toLowerCase()));
+    match = state.wiki1999List.find(p => p.toLowerCase().endsWith('/' + normWithMd.toLowerCase()) || p.toLowerCase().endsWith('/' + normWithoutMd.toLowerCase()));
     if (match) return match;
     
     // 3. Exact filename match (e.g. "暴雨" matching "wiki/世界观/暴雨.md")
-    match = Wiki1999List.find(p => getFilename(p) === targetFilename);
+    match = state.wiki1999List.find(p => getFilename(p) === targetFilename);
     if (match) return match;
     
     // 4. Fuzzy substring match
-    match = Wiki1999List.find(p => p.toLowerCase().includes(normWithoutMd.toLowerCase()));
+    match = state.wiki1999List.find(p => p.toLowerCase().includes(normWithoutMd.toLowerCase()));
     if (match) return match;
     
     return null;
@@ -458,7 +471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function loadRandom1999WikiPage() {
-    const eligiblePaths = Wiki1999List.filter(path => 
+    const eligiblePaths = state.wiki1999List.filter(path => 
       !path.toLowerCase().endsWith('index.md') && 
       !path.toLowerCase().endsWith('log.md')
     );
@@ -469,6 +482,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const randomPath = eligiblePaths[Math.floor(Math.random() * eligiblePaths.length)];
     await load1999WikiPage(randomPath);
+  }
+
+  async function sync1999WikiList() {
+    if (!state.unlocked1999) return;
+    
+    // Rate limit check: sync once every 24 hours
+    const lastSync = await DB.getSetting('wiki1999_last_sync');
+    const now = Date.now();
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+    if (lastSync && (now - lastSync) < ONE_DAY) {
+      console.log('1999 WIKI list already synced in the last 24h. Skipping.');
+      return;
+    }
+    
+    if (!navigator.onLine) return;
+    
+    console.log('Syncing 1999 WIKI file tree in background...');
+    try {
+      const res = await fetch('https://api.github.com/repos/fivood/1999wiki/git/trees/main?recursive=1');
+      if (!res.ok) {
+        throw new Error(`GitHub API returned status ${res.status}`);
+      }
+      const data = await res.json();
+      if (data && Array.isArray(data.tree)) {
+        const fetchedPaths = data.tree
+          .map(item => item.path)
+          .filter(p => p && p.toLowerCase().startsWith('wiki/') && p.toLowerCase().endsWith('.md'));
+        
+        if (fetchedPaths.length > 0) {
+          const staticList = (typeof Wiki1999List !== 'undefined' && Array.isArray(Wiki1999List)) ? Wiki1999List : [];
+          state.wiki1999List = Array.from(new Set([...staticList, ...fetchedPaths]));
+          await DB.setSetting('wiki1999_dynamic_list', fetchedPaths);
+          await DB.setSetting('wiki1999_last_sync', now);
+          console.log(`Successfully synced ${fetchedPaths.length} 1999 WIKI paths dynamically.`);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to sync 1999 WIKI dynamically:', err);
+    }
   }
 
   async function loadRandomWiki() {
@@ -1047,6 +1099,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           await DB.setSetting('unlocked1999', true);
           els.topicGrid.innerHTML = ''; // force re-render
           showToast(state.lang === 'zh' ? '🔓 1999 WIKI 已解锁！' : '🔓 1999 WIKI Unlocked!');
+          sync1999WikiList();
         }
       })();
       
