@@ -69,7 +69,7 @@ const MarkdownParser = (() => {
   /**
    * Strip Markdown syntax while keeping readable structure.
    */
-  function cleanMarkdown(text, preserveWikiLinks = false) {
+  function cleanMarkdown(text, preserveWikiLinks = false, preserveImages = false) {
     let out = text;
 
     // Remove YAML frontmatter
@@ -81,7 +81,9 @@ const MarkdownParser = (() => {
     });
 
     // Remove image syntax, keep alt text
-    out = out.replace(/!\[([^\]]*)\]\([^)]*\)/g, '[$1]');
+    if (!preserveImages) {
+      out = out.replace(/!\[([^\]]*)\]\([^)]*\)/g, '[$1]');
+    }
 
     // Remove link syntax, keep text
     out = out.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');

@@ -427,6 +427,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     return { title, categories, content };
   }
 
+  function resolve1999WikiImagePath(filePath, relativePath) {
+    if (!relativePath) return '';
+    if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+      return relativePath;
+    }
+    
+    const fileParts = filePath.split('/');
+    fileParts.pop(); // remove filename, e.g. ["wiki", "角色"]
+    
+    const relParts = relativePath.split('/');
+    for (const part of relParts) {
+      if (part === '.') {
+        continue;
+      } else if (part === '..') {
+        fileParts.pop();
+      } else {
+        fileParts.push(part);
+      }
+    }
+    
+    const resolvedPath = fileParts.join('/');
+    return `https://raw.githubusercontent.com/fivood/1999wiki/main/${encodeURI(resolvedPath)}`;
+  }
+
+  async function process1999WikiImages(filePath, text) {
+    const isMobile = window.innerWidth < 600;
+    const asciiWidth = isMobile ? 32 : 55;
+    
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    const matches = [];
+    let match;
+    while ((match = imageRegex.exec(text)) !== null) {
+      matches.push({
+        full: match[0],
+        alt: match[1],
+        url: match[2]
+      });
+    }
+    
+    let processedText = text;
+    for (const img of matches) {
+      try {
+        const absoluteUrl = resolve1999WikiImagePath(filePath, img.url);
+        if (absoluteUrl) {
+          const ascii = await Wikipedia.generateAsciiArt(absoluteUrl, asciiWidth);
+          if (ascii) {
+            const asciiBlock = [
+              `// ── [IMAGE: ${img.alt || 'Illustration'}] ──────────────────`,
+              ...ascii.split('\n').map(line => `// ${line}`),
+              `// ────────────────────────────────────────`
+            ].join('\n');
+            processedText = processedText.replace(img.full, '\n' + asciiBlock + '\n');
+          } else {
+            processedText = processedText.replace(img.full, `[IMAGE: ${img.alt || 'Illustration'}]`);
+          }
+        } else {
+          processedText = processedText.replace(img.full, `[IMAGE: ${img.alt || 'Illustration'}]`);
+        }
+      } catch (e) {
+        console.warn('Failed to generate ASCII art for image:', e);
+        processedText = processedText.replace(img.full, `[IMAGE: ${img.alt || 'Illustration'}]`);
+      }
+    }
+    return processedText;
+  }
+
   async function load1999WikiPage(target) {
     const matchedPath = find1999WikiPath(target);
     if (!matchedPath) {
@@ -448,15 +514,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const defaultTitle = matchedPath.split('/').pop().replace(/\.md$/i, '');
       const { title, categories, content: parsedContent } = parse1999WikiFrontmatter(rawText, defaultTitle);
       
-      const cleaned = MarkdownParser.cleanMarkdown(parsedContent, true);
+      const cleaned = MarkdownParser.cleanMarkdown(parsedContent, true, true);
       
-      await renderContent(title, cleaned, '1999.fivood.com', categories);
+      setLoader(true, state.lang === 'zh' ? `> 正在渲染并转换插图为 ASCII 艺术画...` : `> Converting illustrations to ASCII...`);
+      const finalContent = await process1999WikiImages(matchedPath, cleaned);
+      
+      await renderContent(title, finalContent, '1999.fivood.com', categories);
       
       DB.addHistory({
         title: title,
         lang: state.lang,
         source: '1999.fivood.com',
-        extract: cleaned,
+        extract: finalContent,
         categories: categories,
         domain: '1999wiki',
         path: matchedPath
