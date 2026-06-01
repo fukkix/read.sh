@@ -60,7 +60,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     annotations: {},
     currentLineNum: null,
     epub: { book: null, currentIdx: 0 },
-    selectedTopics: [] // empty = ANY
+    selectedTopics: [], // empty = ANY
+    unlocked1999: false
   };
 
   // ── Initialization ────────────────────────────────────────
@@ -73,6 +74,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   updateLangToggle();
   
+  const savedUnlocked = await DB.getSetting('unlocked1999');
+  if (savedUnlocked) state.unlocked1999 = true;
+
   const savedTopics = await DB.getSetting('selectedTopics');
   if (savedTopics && Array.isArray(savedTopics)) state.selectedTopics = savedTopics;
   updateTopicLabel();
@@ -336,6 +340,137 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Actions ───────────────────────────────────────────────
   
+  function find1999WikiPath(target) {
+    if (!target) return null;
+    
+    let norm = target.trim().replace(/\\/g, '/');
+    const hasMd = norm.toLowerCase().endsWith('.md');
+    const normWithMd = hasMd ? norm : norm + '.md';
+    const normWithoutMd = hasMd ? norm.slice(0, -3) : norm;
+    
+    const getFilename = (p) => p.split('/').pop().toLowerCase().replace(/\.md$/, '');
+    const targetFilename = normWithoutMd.split('/').pop().toLowerCase();
+
+    // 1. Exact match (case insensitive)
+    let match = Wiki1999List.find(p => p.toLowerCase() === normWithMd.toLowerCase() || p.toLowerCase() === normWithoutMd.toLowerCase());
+    if (match) return match;
+    
+    // 2. Ends with target (e.g. "世界观/暴雨.md" matching "wiki/世界观/暴雨.md")
+    match = Wiki1999List.find(p => p.toLowerCase().endsWith('/' + normWithMd.toLowerCase()) || p.toLowerCase().endsWith('/' + normWithoutMd.toLowerCase()));
+    if (match) return match;
+    
+    // 3. Exact filename match (e.g. "暴雨" matching "wiki/世界观/暴雨.md")
+    match = Wiki1999List.find(p => getFilename(p) === targetFilename);
+    if (match) return match;
+    
+    // 4. Fuzzy substring match
+    match = Wiki1999List.find(p => p.toLowerCase().includes(normWithoutMd.toLowerCase()));
+    if (match) return match;
+    
+    return null;
+  }
+
+  function parse1999WikiFrontmatter(text, defaultTitle) {
+    let title = defaultTitle;
+    let categories = ['1999 WIKI'];
+    let content = text;
+    
+    const match = text.match(/^---([\s\S]*?)---/);
+    if (match) {
+      const yaml = match[1];
+      
+      const titleMatch = yaml.match(/^title:\s*(.+)$/m);
+      if (titleMatch) {
+        title = titleMatch[1].trim().replace(/^['"]|['"]$/g, '');
+      }
+      
+      const tagsMatch = yaml.match(/^tags:\s*([\s\S]*?)(?:^[a-zA-Z]|$)/m);
+      if (tagsMatch) {
+        const tagsBlock = tagsMatch[1].trim();
+        if (tagsBlock.startsWith('[')) {
+          const parsedTags = tagsBlock.slice(1, -1).split(',').map(t => t.trim().replace(/^['"]|['"]$/g, ''));
+          categories = categories.concat(parsedTags);
+        } else {
+          const blockTags = tagsBlock.split('\n')
+            .map(line => {
+              const m = line.match(/^\s*-\s*(.+)$/);
+              return m ? m[1].trim().replace(/^['"]|['"]$/g, '') : null;
+            })
+            .filter(t => t !== null);
+          categories = categories.concat(blockTags);
+        }
+      }
+      
+      content = text.replace(/^---[\s\S]*?---\n*/, '');
+    }
+    
+    if (title === defaultTitle) {
+      const headingMatch = content.match(/^#\s+(.+)$/m);
+      if (headingMatch) {
+        title = headingMatch[1].trim();
+      }
+    }
+    
+    return { title, categories, content };
+  }
+
+  async function load1999WikiPage(target) {
+    const matchedPath = find1999WikiPath(target);
+    if (!matchedPath) {
+      showToast(state.lang === 'zh' ? `未找到词条: ${target}` : `Entry not found: ${target}`);
+      return;
+    }
+    
+    setLoader(true, state.lang === 'zh' ? `> 正在获取 1999 WIKI: ${matchedPath.split('/').pop()}...` : `> Fetching 1999 WIKI: ${matchedPath.split('/').pop()}...`);
+    state.mode = 'wiki';
+    
+    try {
+      const url = `https://raw.githubusercontent.com/fivood/1999wiki/main/${encodeURI(matchedPath)}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`HTTP status ${res.status}`);
+      }
+      
+      const rawText = await res.text();
+      const defaultTitle = matchedPath.split('/').pop().replace(/\.md$/i, '');
+      const { title, categories, content: parsedContent } = parse1999WikiFrontmatter(rawText, defaultTitle);
+      
+      const cleaned = MarkdownParser.cleanMarkdown(parsedContent, true);
+      
+      await renderContent(title, cleaned, '1999.fivood.com', categories);
+      
+      DB.addHistory({
+        title: title,
+        lang: state.lang,
+        source: '1999.fivood.com',
+        extract: cleaned,
+        categories: categories,
+        domain: '1999wiki',
+        path: matchedPath
+      });
+      
+    } catch (err) {
+      console.error(err);
+      showToast(state.lang === 'zh' ? '获取 1999 WIKI 失败，请检查网络' : 'Failed to fetch 1999 WIKI. Check your connection.');
+    } finally {
+      setLoader(false);
+    }
+  }
+
+  async function loadRandom1999WikiPage() {
+    const eligiblePaths = Wiki1999List.filter(path => 
+      !path.toLowerCase().endsWith('index.md') && 
+      !path.toLowerCase().endsWith('log.md')
+    );
+    
+    if (eligiblePaths.length === 0) {
+      throw new Error('No eligible 1999 wiki pages found');
+    }
+    
+    const randomPath = eligiblePaths[Math.floor(Math.random() * eligiblePaths.length)];
+    await load1999WikiPage(randomPath);
+  }
+
   async function loadRandomWiki() {
     try {
       // Pick a random domain from selected topics, or 'any' if none selected
@@ -343,6 +478,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (state.selectedTopics.length > 0) {
         domain = state.selectedTopics[Math.floor(Math.random() * state.selectedTopics.length)];
       }
+      
+      if (domain === '1999wiki') {
+        await loadRandom1999WikiPage();
+        return;
+      }
+      
       setLoader(true, `> fetching ${state.lang.toUpperCase()} wiki (${domain})...`);
       state.mode = 'wiki';
       
@@ -677,6 +818,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!els.topicGrid.querySelector('.topic-tag')) {
       let html = `<button class="topic-tag" data-val="any">[ * ] ANY</button>`;
       for (const [key, config] of Object.entries(Wikipedia.DOMAINS)) {
+        if (config.locked && !state.unlocked1999) continue;
         html += `<button class="topic-tag" data-val="${key}">[ ${key.toUpperCase()} ] ${config.name[state.lang]}</button>`;
       }
       els.topicGrid.innerHTML = html;
@@ -853,7 +995,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let selectedSearchIdx = -1;
 
   function updateSearchSelection() {
-    const items = Array.from(els.searchResults.querySelectorAll('.cmd-item[data-title]'));
+    const items = Array.from(els.searchResults.querySelectorAll('.cmd-item[data-title], .cmd-item[data-type]'));
     items.forEach((item, idx) => {
       if (idx === selectedSearchIdx) {
         item.style.backgroundColor = 'var(--bg-hover)';
@@ -867,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   els.searchInput.addEventListener('keydown', (e) => {
-    const items = Array.from(els.searchResults.querySelectorAll('.cmd-item[data-title]'));
+    const items = Array.from(els.searchResults.querySelectorAll('.cmd-item[data-title], .cmd-item[data-type]'));
     if (items.length === 0) return;
     
     if (e.key === 'ArrowDown') {
@@ -896,6 +1038,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     
+    // Check for 1999 WIKI unlock command
+    const qLower = q.toLowerCase();
+    if (qLower === '1999' || qLower === '/1999' || qLower === ':1999' || qLower === '1999wiki') {
+      (async () => {
+        if (!state.unlocked1999) {
+          state.unlocked1999 = true;
+          await DB.setSetting('unlocked1999', true);
+          els.topicGrid.innerHTML = ''; // force re-render
+          showToast(state.lang === 'zh' ? '🔓 1999 WIKI 已解锁！' : '🔓 1999 WIKI Unlocked!');
+        }
+      })();
+      
+      els.searchResults.innerHTML = `
+        <div class="cmd-item" data-type="unlock-1999" style="border: 1px dashed var(--accent); background: rgba(158, 206, 164, 0.05); cursor: pointer; padding: 12px; margin-bottom: 8px; border-radius: 4px;">
+          <div class="cmd-title" style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">🔓 [${state.lang === 'zh' ? '系统指令' : 'SYSTEM CMD'}] ${state.lang === 'zh' ? '开启 1999 WIKI' : 'Open 1999 WIKI'}</div>
+          <div class="cmd-desc" style="font-size: 0.85em; color: var(--text-muted);">${state.lang === 'zh' ? '点击立即打开 1999 WIKI 目录选择面板' : 'Click to open 1999 WIKI Topics panel'}</div>
+        </div>
+      `;
+      return;
+    }
+    
     searchTimeout = setTimeout(async () => {
       try {
         els.searchResults.innerHTML = '<div class="cmd-item"><div class="cmd-title">Searching...</div></div>';
@@ -921,6 +1084,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   els.searchResults.addEventListener('click', async (e) => {
     const item = e.target.closest('.cmd-item');
     if (!item) return;
+    
+    // Check if it's the unlock button
+    if (item.dataset.type === 'unlock-1999') {
+      els.modalSearch.classList.remove('active');
+      els.btnOpenTopics.click();
+      return;
+    }
+    
     const title = item.dataset.title;
     if (!title) return;
     
@@ -945,6 +1116,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       setLoader(false);
     }
+  });
+
+  // Delegated click listener for 1999 WIKI double-bracket wiki-links
+  els.editorContent.addEventListener('click', async (e) => {
+    const link = e.target.closest('.wiki-link');
+    if (!link) return;
+    e.preventDefault();
+    await load1999WikiPage(link.getAttribute('data-wiki-path'));
   });
 
   // ── Global Keyboard Shortcuts (Vim / Geeks) ──

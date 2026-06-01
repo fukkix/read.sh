@@ -1,5 +1,5 @@
 // FIREADER Service Worker
-const CACHE_NAME = 'fireader-v2';
+const CACHE_NAME = 'fireader-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
   './js/highlighter.js',
   './js/wikipedia.js',
   './js/epub.js',
+  './js/1999wiki-list.js',
   './js/app.js',
   './icons/icon.svg',
   'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap',

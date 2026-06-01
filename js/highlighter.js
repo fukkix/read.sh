@@ -20,7 +20,7 @@ const Highlighter = (() => {
   // ── Token engine (prevents double-highlighting) ─────────────────
   function tokenize(html) {
     const tokens = [];
-    const re = /(<span[^>]*>[\s\S]*?<\/span>)/g;
+    const re = /(<(?:span|a)[^>]*>[\s\S]*?<\/(?:span|a)>)/g;
     let last = 0, m;
     while ((m = re.exec(html)) !== null) {
       if (m.index > last) tokens.push({ t: 'text', v: html.slice(last, m.index) });
@@ -51,9 +51,17 @@ const Highlighter = (() => {
 
   function join(tokens) { return tokens.map(t => t.v).join(''); }
 
+  function parseWikiLinks(html) {
+    return html.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (match, path, label) => {
+      const displayLabel = label ? label.trim() : path.split('/').pop().trim();
+      return `<a href="#" class="wiki-link" data-wiki-path="${path.trim()}">${displayLabel}</a>`;
+    });
+  }
+
   // ── English highlighter ─────────────────────────────────────────
   function highlightEN(line) {
-    const esc = escHtml(line);
+    let esc = escHtml(line);
+    esc = parseWikiLinks(esc);
 
     // Full-line comment
     if (/^\s*\/\//.test(line)) {
@@ -92,7 +100,8 @@ const Highlighter = (() => {
 
   // ── Chinese highlighter ─────────────────────────────────────────
   function highlightZH(line) {
-    const esc = escHtml(line);
+    let esc = escHtml(line);
+    esc = parseWikiLinks(esc);
 
     if (/^\s*\/\//.test(line)) {
       let toks = tokenize(esc);

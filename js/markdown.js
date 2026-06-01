@@ -69,7 +69,7 @@ const MarkdownParser = (() => {
   /**
    * Strip Markdown syntax while keeping readable structure.
    */
-  function cleanMarkdown(text) {
+  function cleanMarkdown(text, preserveWikiLinks = false) {
     let out = text;
 
     // Remove YAML frontmatter
@@ -115,8 +115,10 @@ const MarkdownParser = (() => {
     out = out.replace(/^[-*_]{3,}$/gm, '\u2500'.repeat(40));
 
     // Remove Obsidian wiki-links [[target|display]] or [[target]]
-    out = out.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2');
-    out = out.replace(/\[\[([^\]]+)\]\]/g, '$1');
+    if (!preserveWikiLinks) {
+      out = out.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2');
+      out = out.replace(/\[\[([^\]]+)\]\]/g, '$1');
+    }
 
     // Remove Obsidian tags
     out = out.replace(/#([a-zA-Z\u4e00-\u9fff][\w\u4e00-\u9fff/]*)/g, '$1');
