@@ -25,3 +25,7 @@ yarn-error.log*
 # Mac OS
 .AppleDouble
 .LSOverride
+
+# Temp / generated artifacts
+temp_*.json
+*.tmp
