@@ -6,10 +6,22 @@ const GistSync = (() => {
   
   async function push(token, gistId, annotations) {
     if (!token) throw new Error('No GitHub Token provided');
-    
-    // Convert array of all annotations to a structured JSON string
-    const content = JSON.stringify(annotations, null, 2);
-    
+
+    // Group annotations by bookId for a structured, navigable gist
+    const byBook = {};
+    for (const a of annotations) {
+      const key = a.bookId || '(unknown)';
+      if (!byBook[key]) byBook[key] = [];
+      byBook[key].push({ line: a.lineNum, text: a.text, ts: a.timestamp });
+    }
+    const payload = {
+      schema: 'fireader-annotations-v1',
+      syncedAt: new Date().toISOString(),
+      count: annotations.length,
+      books: byBook
+    };
+    const content = JSON.stringify(payload, null, 2);
+
     const files = {
       "fireader_annotations.json": { content }
     };

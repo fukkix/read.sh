@@ -122,8 +122,11 @@ const MarkdownParser = (() => {
       out = out.replace(/\[\[([^\]]+)\]\]/g, '$1');
     }
 
-    // Remove Obsidian tags
-    out = out.replace(/#([a-zA-Z\u4e00-\u9fff][\w\u4e00-\u9fff/]*)/g, '$1');
+    // Remove Obsidian tags (keep hex colors like #fff / #ffffff intact)
+    out = out.replace(/#([a-zA-Z\u4e00-\u9fff][\w\u4e00-\u9fff/]*)/g, (match, tag) => {
+      if (/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(tag)) return match;
+      return tag;
+    });
 
     // Remove callout syntax
     out = out.replace(/^>\s*\[!(\w+)\]\s*/gm, '[$1] ');

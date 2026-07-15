@@ -68,15 +68,36 @@ const DB = (() => {
   }
 
   // ── Books ─────────────────────────────────────────────────
-  const saveBook = (book) => tx('books', 'readwrite', (s) => s.add(book));
+  async function getByTitle(title) {
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('books', 'readonly');
+      const store = transaction.objectStore('books');
+      const index = store.index('title');
+      const req = index.get(IDBKeyRange.only(title));
+      req.onsuccess = (e) => resolve(e.target.result || null);
+      req.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  async function saveBook(book) {
+    const existing = await getByTitle(book.title);
+    if (existing) {
+      // Update in place, keep the same id
+      return tx('books', 'readwrite', (s) => s.put({ ...book, id: existing.id }));
+    }
+    return tx('books', 'readwrite', (s) => s.add(book));
+  }
   const getBooks = () => getAll('books');
   const deleteBook = (id) => tx('books', 'readwrite', (s) => s.delete(id));
   const updateBook = (book) => tx('books', 'readwrite', (s) => s.put(book));
 
   // ── History ───────────────────────────────────────────────
+  const HISTORY_MAX = 1000;
+
   async function addHistory(entry) {
     const db = await open();
-    return new Promise((resolve) => {
+    await new Promise((resolve) => {
       const transaction = db.transaction('history', 'readwrite');
       const store = transaction.objectStore('history');
       store.add({
@@ -91,6 +112,23 @@ const DB = (() => {
       });
       transaction.oncomplete = resolve;
       transaction.onerror = resolve; // don't fail on history write
+    });
+    pruneHistory(HISTORY_MAX).catch(() => {}); // best-effort cleanup
+  }
+
+  async function pruneHistory(maxKeep) {
+    const all = await getAll('history');
+    if (all.length <= maxKeep) return;
+    // autoIncrement id is monotonic with insertion order → oldest have smallest id
+    all.sort((a, b) => a.id - b.id);
+    const toDelete = all.length - maxKeep;
+    const db = await open();
+    return new Promise((resolve) => {
+      const transaction = db.transaction('history', 'readwrite');
+      const store = transaction.objectStore('history');
+      for (let i = 0; i < toDelete; i++) store.delete(all[i].id);
+      transaction.oncomplete = resolve;
+      transaction.onerror = resolve;
     });
   }
 
@@ -115,6 +153,7 @@ const DB = (() => {
 
   // ── Annotations ───────────────────────────────────────────
   const saveAnnotation = (bookId, lineNum, text) => tx('annotations', 'readwrite', (s) => s.put({ bookId, lineNum, text, timestamp: Date.now() }));
+  const deleteAnnotation = (bookId, lineNum) => tx('annotations', 'readwrite', (s) => s.delete([bookId, lineNum]));
   
   async function getAnnotations(bookId) {
     const db = await open();
@@ -143,5 +182,5 @@ const DB = (() => {
     });
   }
 
-  return { saveBook, getBooks, deleteBook, updateBook, addHistory, getHistory, getSetting, setSetting, saveAnnotation, getAnnotations, getAllAnnotationsDump };
+  return { saveBook, getBooks, deleteBook, updateBook, addHistory, getHistory, getSetting, setSetting, saveAnnotation, deleteAnnotation, getAnnotations, getAllAnnotationsDump };
 })();

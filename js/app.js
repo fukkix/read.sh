@@ -108,14 +108,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     els.continueTitle.textContent = lastBook.title;
     els.btnContinue.classList.remove('d-none');
     els.btnContinue.addEventListener('click', async () => {
-      setLoader(true, `> resuming ${lastBook.title}...`);
-      state.epub.book = lastBook;
-      state.mode = 'epub';
-      els.splash.classList.add('hidden');
-      let savedIdx = await DB.getSetting(`epub_idx_${lastBook.title}`) || 0;
-      if (savedIdx >= lastBook.chapters.length) savedIdx = 0;
-      await loadEpubChapter(savedIdx);
-      setLoader(false);
+      try {
+        setLoader(true, `> resuming ${lastBook.title}...`);
+        state.epub.book = lastBook;
+        state.mode = 'epub';
+        els.splash.classList.add('hidden');
+        let savedIdx = await DB.getSetting(`epub_idx_${lastBook.title}`) || 0;
+        if (savedIdx >= lastBook.chapters.length) savedIdx = 0;
+        await loadEpubChapter(savedIdx);
+      } catch (e) {
+        console.error(e);
+        showToast('Failed to resume: ' + (e.message || e));
+        state.mode = 'none';
+        updateHeaderControls();
+      } finally {
+        setLoader(false);
+      }
     });
   }
 
@@ -125,7 +133,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ── Core Render Logic ─────────────────────────────────────
-  
+
+  function escHtml(t) {
+    return String(t == null ? '' : t)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   let loaderInterval = null;
   function setLoader(active, text = 'Loading...') {
     if (active) {
@@ -302,7 +319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         html += `<div>${highlighted}</div>`;
       }
       if (state.annotations[lineNum]) {
-        html += `<div class="inline-annotation">// ${state.annotations[lineNum]}</div>`;
+        html += `<div class="inline-annotation">// ${escHtml(state.annotations[lineNum])}</div>`;
         gutterHtml += `<div class="line-num" style="height: 25px;"></div>`; // extra space for annotation in gutter
       }
     }
@@ -347,9 +364,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (mobPB) mobPB.textContent = bar;
 
       if (state.mode === 'epub' && state.epub.book) {
-        DB.setSetting(`epub_scroll_${state.epub.book.title}_${state.epub.currentIdx}`, st);
+        scheduleScrollSave();
       }
     }
+  }
+
+  let scrollSaveTimer = null;
+  let pendingScroll = null;
+  function scheduleScrollSave() {
+    if (state.mode !== 'epub' || !state.epub.book) return;
+    pendingScroll = {
+      title: state.epub.book.title,
+      idx: state.epub.currentIdx,
+      pos: els.scrollArea.scrollTop
+    };
+    clearTimeout(scrollSaveTimer);
+    scrollSaveTimer = setTimeout(() => {
+      if (!pendingScroll) return;
+      const { title, idx, pos } = pendingScroll;
+      pendingScroll = null;
+      DB.setSetting(`epub_scroll_${title}_${idx}`, pos);
+    }, 400);
   }
 
   els.scrollArea.addEventListener('scroll', () => requestAnimationFrame(updateProgress));
@@ -769,7 +804,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function handleFileUpload(file) {
     if (!file) return;
-    const ext = file.name.split('.').pop().toLowerCase();
+    const dotIdx = file.name.lastIndexOf('.');
+    const ext = dotIdx > 0 ? file.name.slice(dotIdx + 1).toLowerCase() : '';
     if (ext === 'epub') {
       handleEpubUpload(file);
     } else if (ext === 'md' || ext === 'markdown' || ext === 'txt') {
@@ -833,7 +869,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const text = match[2];
           const indent = '&nbsp;&nbsp;'.repeat(level - 2);
           html += `<div class="cmd-item" data-line-idx="${idx}">
-                     <div class="cmd-title">${indent}${level > 2 ? '└ ' : ''}${text}</div>
+                     <div class="cmd-title">${indent}${level > 2 ? '└ ' : ''}${escHtml(text)}</div>
                    </div>`;
         }
       });
@@ -921,6 +957,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       } finally {
         setLoader(false);
       }
+    } else if (state.mode === 'epub' && state.epub.book) {
+      // Switch language and re-render current chapter with new highlighter
+      state.lang = newLang;
+      updateLangToggle();
+      await DB.setSetting('lang', state.lang);
+      els.topicGrid.innerHTML = '';
+      updateTopicLabel();
+      updateShortcutLegend();
+      await loadEpubChapter(state.epub.currentIdx);
     } else {
       // Just switch language for UI
       state.lang = newLang;
@@ -1020,14 +1065,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (text) {
         await DB.saveAnnotation(state.title, state.currentLineNum, text);
       } else {
-        // delete annotation if empty
-        const db = await DB.getSetting('dummy'); // hacky way to init db connection
-        // for MVP we can just overwrite with empty, or properly delete
+        await DB.deleteAnnotation(state.title, state.currentLineNum);
       }
       els.modalAnnotate.classList.remove('active');
-      // re-render to show annotation
       const source = state.mode === 'wiki' ? `Wikipedia ${state.lang.toUpperCase()}` : 'Local EPUB';
-      // We need to re-render using the current lines array. Let's just reconstruct the textContent
       const textContent = state.lines.slice(8).join('\n'); // skip the 8-line header
       await renderContent(state.title, textContent, source);
     }
@@ -1221,12 +1262,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         
-        const resultsHtml = results.map(r => `
-          <div class="cmd-item" data-title="${r.title}">
-            <div class="cmd-title">${r.title}</div>
-            <div class="cmd-desc">${r.description || '...'}</div>
-          </div>
-        `).join('');
+        const resultsHtml = results.map(r => {
+          const t = escHtml(r.title);
+          const d = escHtml(r.description || '...');
+          return `
+          <div class="cmd-item" data-title="${t}">
+            <div class="cmd-title">${t}</div>
+            <div class="cmd-desc">${d}</div>
+          </div>`;
+        }).join('');
         
         els.searchResults.innerHTML = customCardHtml + resultsHtml;
       } catch (err) {

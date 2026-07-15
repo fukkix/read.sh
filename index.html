@@ -4,15 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>READ.SH</title>
-  
+
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.wikipedia.org https://api.github.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; object-src 'none';">
+
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0d1117">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
   
   <!-- CSS -->
   <link rel="stylesheet" href="css/base.css">
@@ -197,7 +199,7 @@
   <div id="modal-settings" class="modal-wrapper">
     <div class="cmd-palette">
       <div class="cmd-title" style="padding: 16px 16px 0;">// GITHUB SYNC SETTINGS</div>
-      <input type="password" id="setting-token" class="cmd-input" placeholder="> GitHub PAT (repo scope)...">
+      <input type="password" id="setting-token" class="cmd-input" placeholder="> GitHub PAT (gist scope)...">
       <input type="text" id="setting-gist" class="cmd-input" placeholder="> Gist ID (leave empty to create)...">
       <div style="padding: 16px; text-align: right;">
         <button id="btn-save-settings" class="cmd-btn" style="display: inline-block;">[ SAVE & CLOSE ]</button>

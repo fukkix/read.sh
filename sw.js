@@ -1,5 +1,5 @@
 // FIREADER Service Worker
-const CACHE_NAME = 'fireader-v3';
+const CACHE_NAME = 'fireader-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -9,9 +9,13 @@ const ASSETS = [
   './js/highlighter.js',
   './js/wikipedia.js',
   './js/epub.js',
+  './js/markdown.js',
+  './js/sync.js',
   './js/1999wiki-list.js',
+  './js/pixel-loader.js',
   './js/app.js',
   './icons/icon.svg',
+  './icons/apple-touch-icon.png',
   'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
 ];
@@ -37,7 +41,7 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   
   const url = new URL(e.request.url);
-  const isWikiAPI = url.hostname.includes('wikipedia.org') && url.pathname.includes('/api/');
+  const isWikiAPI = url.hostname.includes('wikipedia.org');
   
   if (isWikiAPI) {
     // Network first for Wikipedia API

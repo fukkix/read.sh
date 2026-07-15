@@ -119,7 +119,6 @@ main {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
-  scroll-behavior: smooth;
   position: relative;
 }
 

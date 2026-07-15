@@ -4,6 +4,15 @@
  */
 const EpubParser = (() => {
 
+  const NS_DC = 'http://purl.org/dc/elements/1.1/';
+  function getDcField(doc, qualifiedName) {
+    const local = qualifiedName.includes(':') ? qualifiedName.split(':')[1] : qualifiedName;
+    const el = doc.getElementsByTagNameNS(NS_DC, local)[0]
+      || doc.getElementsByTagName(qualifiedName)[0]
+      || doc.querySelector('metadata ' + local);
+    return el?.textContent?.trim() || '';
+  }
+
   async function parse(file) {
     if (typeof JSZip === 'undefined') throw new Error('JSZip not loaded');
 
@@ -26,8 +35,8 @@ const EpubParser = (() => {
     const parser = new DOMParser();
     const opf    = parser.parseFromString(opfXml, 'application/xml');
 
-    const title  = opf.querySelector('metadata title, dc\\:title')?.textContent?.trim() || file.name.replace(/\.epub$/i, '');
-    const author = opf.querySelector('metadata creator, dc\\:creator')?.textContent?.trim() || '';
+    const title  = getDcField(opf, 'dc:title') || file.name.replace(/\.epub$/i, '');
+    const author = getDcField(opf, 'dc:creator');
 
     // 3. Build manifest map { id → { href, mediaType } }
     const manifest = {};
