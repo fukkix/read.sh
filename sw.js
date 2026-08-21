@@ -1,5 +1,5 @@
 // FIREADER Service Worker
-const CACHE_NAME = 'fireader-v4';
+const CACHE_NAME = 'fireader-v5';
 const ASSETS = [
   './',
   './index.html',

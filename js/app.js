@@ -171,13 +171,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let filled = Math.floor(displayP / 5);
         let bar = '▰'.repeat(filled) + '▱'.repeat(20 - filled);
-        els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--syn-num)">[${bar}] ${Math.floor(displayP)}%</span>`;
+        els.loaderText.innerHTML = `> ${escHtml(text)}<br><span style="color:var(--syn-num)">[${bar}] ${Math.floor(displayP)}%</span>`;
       }, 50);
     } else {
       clearInterval(loaderInterval);
       // Flash 100% DONE
       let bar = '▰'.repeat(20);
-      els.loaderText.innerHTML = `> ${text}<br><span style="color:var(--syn-num)">[${bar}] 100%</span><br><span style="color:var(--text-primary)">DONE</span>`;
+      els.loaderText.innerHTML = `> ${escHtml(text)}<br><span style="color:var(--syn-num)">[${bar}] 100%</span><br><span style="color:var(--text-primary)">DONE</span>`;
       
       if (typeof PixelLoader !== 'undefined') {
         els.loaderText.style.display = 'none'; // hide text during shatter
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function showToast(msg, isError = false) {
     const t = document.createElement('div');
     t.className = 'toast' + (isError ? ' error' : '');
-    t.innerHTML = `> ${msg}`;
+    t.textContent = `> ${msg}`;
     els.toastContainer.appendChild(t);
     setTimeout(() => {
       t.style.animation = 'toast-out 0.2s ease-out forwards';
@@ -855,8 +855,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (state.mode === 'epub' && state.epub.book) {
       state.epub.book.chapters.forEach((ch, i) => {
         const active = i === state.epub.currentIdx ? 'selected' : '';
-        html += `<div class="cmd-item ${active}" data-epub-idx="${i}">
-                   <div class="cmd-title">${i + 1}. ${ch.title || 'Chapter ' + (i + 1)}</div>
+          html += `<div class="cmd-item ${active}" data-epub-idx="${i}">
+                   <div class="cmd-title">${i + 1}. ${escHtml(ch.title) || 'Chapter ' + (i + 1)}</div>
                  </div>`;
       });
     } else if (state.mode === 'wiki') {
@@ -1085,8 +1085,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       els.historyList.innerHTML = history.map((item, idx) => `
         <div class="cmd-item" data-idx="${idx}">
-          <div class="cmd-title">${item.title}</div>
-          <div class="cmd-desc">${new Date(item.timestamp).toLocaleString()} | ${item.domain.toUpperCase()} | ${item.lang.toUpperCase()}</div>
+          <div class="cmd-title">${escHtml(item.title)}</div>
+          <div class="cmd-desc">${new Date(item.timestamp).toLocaleString()} | ${escHtml(String(item.domain || '').toUpperCase())} | ${escHtml(String(item.lang || '').toUpperCase())}</div>
         </div>
       `).join('');
       

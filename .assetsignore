@@ -1,0 +1,10 @@
+# 不作为静态资源上传的文件（语法同 .gitignore）
+.git
+.wrangler
+.gitignore
+.assetsignore
+wrangler.toml
+worker.js
+README.md
+temp_*.json
+*.tmp

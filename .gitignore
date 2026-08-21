@@ -29,3 +29,6 @@ yarn-error.log*
 # Temp / generated artifacts
 temp_*.json
 *.tmp
+
+# Wrangler local state
+.wrangler/

@@ -54,7 +54,8 @@ const Highlighter = (() => {
   function parseWikiLinks(html) {
     return html.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (match, path, label) => {
       const displayLabel = label ? label.trim() : path.split('/').pop().trim();
-      return `<a href="#" class="wiki-link" data-wiki-path="${path.trim()}">${displayLabel}</a>`;
+      const safePath = path.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return `<a href="#" class="wiki-link" data-wiki-path="${safePath}">${displayLabel}</a>`;
     });
   }
 
