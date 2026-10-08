@@ -1,9 +1,8 @@
 name = "read-sh"
-main = "worker.js"
 compatibility_date = "2024-05-27"
 
-# 绑定静态资源目录（因为我们的代码都在根目录，所以写 ./）
+# 纯静态：Workers 静态资源自己会把 / 映射到 index.html、给 .html 配 text/html。
+# 以前的 worker.js 把 / 改写成 /index.html 再取，而静态资源默认会把 /index.html 307 回 /，
+# 浏览器就在两者之间无限跳。别再加回那层改写。
 [assets]
 directory = "./"
-binding = "ASSETS"
-run_worker_first = true
